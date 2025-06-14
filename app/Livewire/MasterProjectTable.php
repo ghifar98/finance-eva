@@ -131,7 +131,7 @@ final class MasterProjectTable extends PowerGridComponent
 		    //     ->slot('Detail')
 		    //     ->class('bg-blue-500 text-white font-bold py-2 px-2 rounded')
 		        // ->route('iot.device.setup.detail', ['setupId' => $row->id, 'coopSlug' => $this->coop->coop_slug, 'iotDeviceSlug' => $this->iotDevice->module_coop_slug]),
-                
+
             // Button::add('edit')
             //     ->slot('Edit')
             //     ->class('bg-blue-500 text-white font-bold py-2 px-2 rounded'),
@@ -141,7 +141,15 @@ final class MasterProjectTable extends PowerGridComponent
                 ->slot('Detail')
                 ->class('bg-blue-500 text-white font-bold py-2 px-2 rounded')
                 ->route('master-projects.show', ['id' => $row->id]),
-        
+
+//            Button::add('detail')
+//                ->render(function (MasterProject $row) {
+//                    // Pastikan route 'master-projects.show' sudah terdefinisi di file routes/web.php Anda.
+//                    $detailUrl = route('master-projects.show', ['id' => $row->id]);
+//
+//                    return '<a href="' . $detailUrl . '" class="bg-blue-500 text-white font-bold py-2 px-2 rounded">Detail</a>';
+//                }),
+//
         ];
     }
 
