@@ -2,10 +2,9 @@
 
 namespace App\Livewire;
 
-use App\Models\Account;
+use App\Models\SubAccount;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Blade;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
@@ -13,9 +12,11 @@ use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 
-final class AccountTable extends PowerGridComponent
+final class SubAccountTable extends PowerGridComponent
 {
-    public string $tableName = 'account-table-ycnuxq-table';
+    public string $tableName = 'sub-account-table-8wxtma-table';
+    
+    public string $accountId;
 
     public function setUp(): array
     {
@@ -32,7 +33,10 @@ final class AccountTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return Account::query();
+       
+        return SubAccount::where('account_id', $this->accountId)
+            ->with('account');
+    
     }
 
     public function relationSearch(): array
@@ -44,49 +48,17 @@ final class AccountTable extends PowerGridComponent
     {
         return PowerGrid::fields()
             ->add('id')
-            ->add('user_id')
-            ->add('code')
+            ->add('account_id')
             ->add('name')
-            ->add('pos_laporan')
-            ->add('pos_saldo')
-            ->add('deskripsi')
-            ->add('credit')
-            ->add('debit')
-            ->add('created_at')
-            ->add('detail', fn (Account $model) => Blade::render('<x-button href="'. route('account.show',['id'=>$model->id]) .'" light positive label="Detail" />'));
-    
+            ->add('created_at');
     }
 
     public function columns(): array
     {
         return [
             Column::make('Id', 'id'),
-            Column::make('User id', 'user_id'),
-            Column::make('Code', 'code')
-                ->sortable()
-                ->searchable(),
-
+            Column::make('Account id', 'account_id'),
             Column::make('Name', 'name')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Pos laporan', 'pos_laporan')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Pos saldo', 'pos_saldo')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Deskripsi', 'deskripsi')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Credit', 'credit')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Debit', 'debit')
                 ->sortable()
                 ->searchable(),
 
@@ -97,7 +69,7 @@ final class AccountTable extends PowerGridComponent
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Detail', 'detail'),
+            Column::action('Action')
         ];
     }
 
@@ -107,4 +79,32 @@ final class AccountTable extends PowerGridComponent
         ];
     }
 
+    #[\Livewire\Attributes\On('edit')]
+    public function edit($rowId): void
+    {
+        $this->js('alert('.$rowId.')');
+    }
+
+    public function actions(SubAccount $row): array
+    {
+        return [
+            Button::add('edit')
+                ->slot('Edit: '.$row->id)
+                ->id()
+                ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
+                ->dispatch('edit', ['rowId' => $row->id])
+        ];
+    }
+
+    /*
+    public function actionRules($row): array
+    {
+       return [
+            // Hide button edit for ID 1
+            Rule::button('edit')
+                ->when(fn($row) => $row->id === 1)
+                ->hide(),
+        ];
+    }
+    */
 }

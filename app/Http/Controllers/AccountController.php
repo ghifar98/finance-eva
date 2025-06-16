@@ -7,10 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Account;
 
-
 class AccountController extends Controller
 {
-
     public function index()
     {
         return view('account.index');
@@ -23,7 +21,6 @@ class AccountController extends Controller
 
     public function store(Request $request)
     {
-
         $request->validate([
             'code' => 'required|string|max:50',
             'name' => 'required|string|max:100',
@@ -39,12 +36,11 @@ class AccountController extends Controller
             'pos_saldo.required' => 'Pos saldo harus diisi.',
             'credit.numeric' => 'Nilai kredit harus berupa angka.',
             'debit.numeric' => 'Nilai debit harus berupa angka.'
-
         ]);
 
         $data = $request->all();
-        $data['user_id'] = Auth::user()->id; // Set the user_id to the authenticated user's ID
-        // Save to database
+        $data['user_id'] = Auth::user()->id;
+
         Account::create($data);
 
         return redirect()->route('account.index')->with('success', 'Account created successfully.');
@@ -52,13 +48,13 @@ class AccountController extends Controller
 
     public function show($id)
     {
-        $account = Account::findOrFail($id);
+        $account = Account::with('subAccounts')->findOrFail($id); // Memuat sub-akun
         return view('account.show', compact('account'));
     }
 
     public function edit($id)
     {
-        $account = Account::findOrFail($id);
+        $account = Account::with('subAccounts')->findOrFail($id); // Memuat sub-akun
         return view('account.edit', compact('account'));
     }
 

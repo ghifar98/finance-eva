@@ -18,4 +18,13 @@ class Account extends Model
         'debit'
     ];
     
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+
+    }
+    public function subAccounts()
+    {
+        return $this->hasMany(SubAccount::class);
+    }
 }

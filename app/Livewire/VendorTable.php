@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Models\Account;
+use App\Models\Vendor;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Blade;
@@ -13,9 +13,9 @@ use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 
-final class AccountTable extends PowerGridComponent
+final class VendorTable extends PowerGridComponent
 {
-    public string $tableName = 'account-table-ycnuxq-table';
+    public string $tableName = 'vendor-table-5niwxi-table';
 
     public function setUp(): array
     {
@@ -32,7 +32,7 @@ final class AccountTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return Account::query();
+        return Vendor::query();
     }
 
     public function relationSearch(): array
@@ -44,16 +44,11 @@ final class AccountTable extends PowerGridComponent
     {
         return PowerGrid::fields()
             ->add('id')
-            ->add('user_id')
-            ->add('code')
             ->add('name')
-            ->add('pos_laporan')
-            ->add('pos_saldo')
-            ->add('deskripsi')
-            ->add('credit')
-            ->add('debit')
+            ->add('address')
+            ->add('email')
             ->add('created_at')
-            ->add('detail', fn (Account $model) => Blade::render('<x-button href="'. route('account.show',['id'=>$model->id]) .'" light positive label="Detail" />'));
+            ->add('detail', fn (Vendor $model) => Blade::render('<x-button href="'. route('vendor.show',['id'=>$model->id]) .'" light positive label="Detail" />'));
     
     }
 
@@ -61,32 +56,15 @@ final class AccountTable extends PowerGridComponent
     {
         return [
             Column::make('Id', 'id'),
-            Column::make('User id', 'user_id'),
-            Column::make('Code', 'code')
-                ->sortable()
-                ->searchable(),
-
             Column::make('Name', 'name')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Pos laporan', 'pos_laporan')
+            Column::make('Address', 'address')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Pos saldo', 'pos_saldo')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Deskripsi', 'deskripsi')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Credit', 'credit')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Debit', 'debit')
+            Column::make('Email', 'email')
                 ->sortable()
                 ->searchable(),
 
@@ -96,15 +74,22 @@ final class AccountTable extends PowerGridComponent
             Column::make('Created at', 'created_at')
                 ->sortable()
                 ->searchable(),
-
-            Column::make('Detail', 'detail'),
+   Column::make('Detail', 'detail'),
+        
         ];
     }
+// app/Http/Controllers/VendorController.php
+
+public function show($id)
+{
+    $vendor = Vendor::findOrFail($id);
+
+    return view('vendor.show', compact('vendor'));
+}
 
     public function filters(): array
     {
         return [
         ];
     }
-
 }

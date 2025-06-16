@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\MasterProject;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Blade;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
@@ -54,7 +55,8 @@ final class MasterProjectTable extends PowerGridComponent
             ->add('end_project_formatted', fn (MasterProject $model) => Carbon::parse($model->end_project)->format('d/m/Y'))
             ->add('rab')
             ->add('data_proyek')
-            ->add('created_at');
+            ->add('created_at')
+            ->add('detail', fn (MasterProject $model) => Blade::render('<x-button href="'. route('master-projects.show',['id'=>$model->id]) .'" light positive label="Detail" />'));
     }
 
     public function columns(): array
@@ -95,13 +97,9 @@ final class MasterProjectTable extends PowerGridComponent
             Column::make('Rab', 'rab')
                 ->sortable()
                 ->searchable(),
+                Column::make('Detail', 'detail'),
 
-            // Column::make('Data proyek', 'data_proyek')
-            //     ->sortable()
-            //     ->searchable(),
-
-
-            Column::action('Action')
+            
         ];
     }
 
@@ -119,49 +117,5 @@ final class MasterProjectTable extends PowerGridComponent
     //     $this->js('alert('.$rowId.')');
     // }
 
-    public function actions(MasterProject $row): array
-    {
-        return [
-            // Button::add('edit')
-            //     ->slot('Edit: '.$row->id)
-            //     ->id()
-            //     ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
-            //     ->dispatch('edit', ['rowId' => $row->id]),
-            // Button::add('detail')
-		    //     ->slot('Detail')
-		    //     ->class('bg-blue-500 text-white font-bold py-2 px-2 rounded')
-		        // ->route('iot.device.setup.detail', ['setupId' => $row->id, 'coopSlug' => $this->coop->coop_slug, 'iotDeviceSlug' => $this->iotDevice->module_coop_slug]),
-
-            // Button::add('edit')
-            //     ->slot('Edit')
-            //     ->class('bg-blue-500 text-white font-bold py-2 px-2 rounded'),
-            //     ->route('master-projects.edit', ['id' => $row->id])
-
-            Button::add('detail')
-                ->slot('Detail')
-                ->class('bg-blue-500 text-white font-bold py-2 px-2 rounded')
-                ->route('master-projects.show', ['id' => $row->id]),
-
-//            Button::add('detail')
-//                ->render(function (MasterProject $row) {
-//                    // Pastikan route 'master-projects.show' sudah terdefinisi di file routes/web.php Anda.
-//                    $detailUrl = route('master-projects.show', ['id' => $row->id]);
-//
-//                    return '<a href="' . $detailUrl . '" class="bg-blue-500 text-white font-bold py-2 px-2 rounded">Detail</a>';
-//                }),
-//
-        ];
-    }
-
-    /*
-    public function actionRules($row): array
-    {
-       return [
-            // Hide button edit for ID 1
-            Rule::button('edit')
-                ->when(fn($row) => $row->id === 1)
-                ->hide(),
-        ];
-    }
-    */
+    
 }
