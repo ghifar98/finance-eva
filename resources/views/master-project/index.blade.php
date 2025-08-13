@@ -48,18 +48,5 @@
             </div>
         </div>
 
-        <!-- Proyek Selesai -->
-        <div class="space-y-4">
-            <h2 class="text-lg font-medium text-gray-800 dark:text-white">
-                <x-icon name="check-badge" class="mr-2 inline h-5 w-5 text-green-500" />
-                Proyek Selesai
-            </h2>
-            <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <livewire:master-project-table
-                    :projects="$completedProjects" 
-                    :showCompleted="true"
-                />
-            </div>
-        </div>
-    </div>
+        
 </x-layouts.app>

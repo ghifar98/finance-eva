@@ -21,6 +21,8 @@ class Purchase extends Model
         'qty',
         'balance',
         'total_ppn',
+        'account_id',
+
     ];
 
     public function vendor()
@@ -33,5 +35,8 @@ class Purchase extends Model
         return $this->belongsTo(MasterProject::class, 'project_id');
     }
 
-    
+    public function account()
+    {
+        return $this->belongsTo(Account::class, 'account_id');
+    }
 }

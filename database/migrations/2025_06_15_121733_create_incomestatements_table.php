@@ -17,7 +17,7 @@ return new class extends Migration
                 $table->string('item_description'); // Deskripsi item
                 $table->enum ('type', ['debit', 'credit']);
                 $table->integer('nominal'); // Nominal amount
-
+            $table->foreignId('account_id')->constrained('accounts')->onDelete('cascade'); // Foreign key to accounts table
 
             
             $table->timestamps();

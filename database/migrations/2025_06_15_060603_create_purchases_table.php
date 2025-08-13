@@ -29,6 +29,10 @@ return new class extends Migration
             $table->integer('qty')->nullable(); // Jumlah yang sudah dibayar
             $table->integer('balance')->nullable(); // Sisa pembayaran
             $table->integer('total_ppn')->nullable(); // Total PPN
+            // make account_id nullable
+            $table->foreignId('account_id')->nullable() // ID akun (foreign key)
+                ->constrained('accounts') // Pastikan ada tabel accounts
+                ->onDelete('set null'); // Set akun ke null jika akun dihapus
 
             $table->timestamps();
 

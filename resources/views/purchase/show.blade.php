@@ -73,7 +73,19 @@
         @csrf
         <x-errors />
         
-        <x-select
+    <div class="mb-4">
+    <label for="account_id" class="block text-sm font-medium text-gray-700">Pilih Akun</label>
+    <select id="account_id" name="account_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+        @foreach ($accounts as $id => $name)
+            <option value="{{ $id }}" {{ $purchase->account_id == $id ? 'selected' : '' }}>
+                {{ $name }}
+            </option>
+        @endforeach
+    </select>
+</div>
+
+
+<x-select
             name="status"
             label="Status"
             placeholder="e.g., Active, Pending, Stuck, Done"
@@ -81,6 +93,7 @@
             corner-hint="Wajib diisi"
              :options="['belum disetuji', 'disetujui', 'ditolak']"
         />
+
         <x-button label="Update Status" type="submit" primary />
 
     </form>

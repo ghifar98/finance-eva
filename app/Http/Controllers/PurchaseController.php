@@ -5,21 +5,49 @@ namespace App\Http\Controllers;
 use App\Models\Incomestatement;
 use App\Models\Purchase;
 use Illuminate\Http\Request;
+use App\Models\Account;
 
 class PurchaseController extends Controller
 {
-    public function show($id)
+  public function show($id)
 {
     $purchase = Purchase::with(['vendor','project'])->findOrFail($id);
+    $accounts = Account::pluck('name', 'id'); 
+// key = id (int, disimpan di DB), value = name (untuk ditampilkan)
 
-    return view('purchase.show', compact('purchase'));
+    return view('purchase.show', compact('purchase', 'accounts'));
 }
-    public function index()
+     public function index(Request $request)
     {
-        // Logic to display the list of purchases
-        return view('purchase.index');
-    }
+        $query = Purchase::with('project');
 
+        // Handle project filter
+        if ($request->filled('project_id')) {
+            $query->where('project_id', $request->project_id);
+        }
+
+        // Handle search
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('po_no', 'like', "%{$searchTerm}%")
+                  ->orWhere('company', 'like', "%{$searchTerm}%")
+                  ->orWhere('rep_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('phone', 'like', "%{$searchTerm}%")
+                  ->orWhereHas('project', function ($projectQuery) use ($searchTerm) {
+                      $projectQuery->where('project_name', 'like', "%{$searchTerm}%");
+                    });
+            });
+            
+        }
+           return view('purchase.index', [
+            'purchases' => $query->paginate(10),
+            'projects' => \App\Models\MasterProject::all(),
+        ]);
+    
+        
+    }
+ 
     public function create()
     {
         $vendors = \App\Models\Vendor::select('id', 'name')->get();
@@ -72,23 +100,20 @@ class PurchaseController extends Controller
     public function updatestatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:belum disetujui,disetujui,ditolak', // Adjust the statuses as needed
+            'status' => 'required|in:disetujui,ditolak,belum disetujui',
         ]);
+
         $purchase = Purchase::findOrFail($id);
         $purchase->status = $request->input('status');
+        $purchase->account_id = $request->input('account_id');
         $purchase->save();
 
-        // Logic to update the status of a purchase
-        //    'purchase_id',
-        // 'item_description',
-        // 'type',
-        // 'nominal',
-        
         if($purchase->status === 'disetujui') {
             Incomestatement::updateOrCreate([
                 'purchase_id' => $id,
             ],[
                 'item_description' => 'Pembelian Barang',
+                'account_id' => $purchase->account_id,
                 'type' => 'debit',
                 'nominal' => $purchase->total_amount??0,
             ]);

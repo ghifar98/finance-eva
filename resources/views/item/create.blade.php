@@ -11,8 +11,8 @@
             </div>
 
             {{-- Form --}}
-            <form method="POST" action="{{ route('item.store',['id'=>$purchase->id]) }}" class="flex flex-col gap-6">
-                @csrf
+          <form method="POST" action="{{ route('purchase.item.store', ['id' => $purchase->id]) }}" class="flex flex-col gap-6">
+      @csrf
                 <x-errors />
 
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">

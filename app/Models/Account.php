@@ -27,4 +27,12 @@ class Account extends Model
     {
         return $this->hasMany(SubAccount::class);
     }
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class, 'account_id');
+    }
+    public function incomestatements()
+    {
+        return $this->hasMany(Incomestatement::class, 'account_id');
+    }
 }

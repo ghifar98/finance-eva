@@ -3,11 +3,10 @@
 namespace App\Livewire;
 
 use App\Models\Incomestatement;
-use Illuminate\Support\Carbon;
+use App\Models\Account;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
-use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
@@ -15,34 +14,155 @@ use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 final class IncomestatementTable extends PowerGridComponent
 {
     public string $tableName = 'incomestatement-table-z6muea-table';
-    public string $startDate;
-    public string $endDate;
 
-    public string $projectId;
+    public string $startDate = '';
+    public string $endDate = '';
+    public string $projectId = '';
 
     public function setUp(): array
     {
         $this->showCheckBox();
 
         return [
-            PowerGrid::header()
-                ->showSearchInput(),
-            PowerGrid::footer()
-                ->showPerPage()
-                ->showRecordCount(),
+            PowerGrid::header()->showSearchInput(),
+            PowerGrid::footer()->showPerPage()->showRecordCount(),
         ];
     }
 
     public function datasource(): Builder
     {
-        if ($this->startDate && $this->endDate&& $this->projectId) {
-            return Incomestatement::whereHas('purchase', function ($query) {
-                $query->whereBetween('date', [$this->startDate, $this->endDate])
-                      ->where('project_id', $this->projectId);
-            })->with(['purchase']);
-        } else{
-            return Incomestatement::query()->with(['purchase']);
-        }
+        return Account::query()
+            ->with(['incomestatements' => function ($query) {
+                $query->when($this->startDate && $this->endDate, function ($q) {
+                    $q->whereHas('purchase', function ($subQ) {
+                        $subQ->whereBetween('date', [$this->startDate, $this->endDate]);
+
+                        if ($this->projectId) {
+                            $subQ->where('project_id', $this->projectId);
+                        }
+                    });
+                });
+            }])
+            ->where(function ($query) {
+                $query->whereIn('code', ['40000', '50000', '60000', '70000', '80000'])
+                    ->orWhere(function ($q) {
+                        $q->where('code', 'like', '4%')
+                          ->orWhere('code', 'like', '5%')
+                          ->orWhere('code', 'like', '6%')
+                          ->orWhere('code', 'like', '7%')
+                          ->orWhere('code', 'like', '8%');
+                    });
+            });
+    }
+
+    public function fields(): PowerGridFields
+    {
+        return PowerGrid::fields()
+            ->add('id')
+            ->add('code')
+            ->add('name')
+            ->add('total_nominal', function ($model) {
+                // Filter incomestatements sesuai tanggal dan project
+                $total = $model->incomestatements
+                    ->filter(function ($entry) {
+                        $valid = true;
+ 
+                        if ($this->startDate && $this->endDate) {
+                            $entryDate = optional($entry->purchase)->date;
+                            if (!$entryDate || $entryDate < $this->startDate || $entryDate > $this->endDate) {
+                                $valid = false;
+                            }
+                        }
+
+                        if ($this->projectId) {
+                            if (optional($entry->purchase)->project_id != $this->projectId) {
+                                $valid = false;
+                            }
+                        }
+
+                        return $valid;
+                    })
+                    ->sum('nominal');
+
+                // Tambahkan nominal dari akun anak
+                $code = $model->code;
+
+                if (strlen($code) == 5 && substr($code, -4) === '0000') {
+                    $prefix = substr($code, 0, 1);
+                    $childAccounts = Account::where('code', 'like', $prefix . '%')
+                        ->where('code', '!=', $code)
+                        ->with(['incomestatements.purchase'])
+                        ->get();
+
+                    foreach ($childAccounts as $child) {
+                        $childTotal = $child->incomestatements
+                            ->filter(function ($entry) {
+                                $valid = true;
+
+                                if ($this->startDate && $this->endDate) {
+                                    $entryDate = optional($entry->purchase)->date;
+                                    if (!$entryDate || $entryDate < $this->startDate || $entryDate > $this->endDate) {
+                                        $valid = false;
+                                    }
+                                }
+
+                                if ($this->projectId) {
+                                    if (optional($entry->purchase)->project_id != $this->projectId) {
+                                        $valid = false;
+                                    }
+                                }
+
+                                return $valid;
+                            })
+                            ->sum('nominal');
+
+                        $total += $childTotal;
+                    }
+                } elseif (strlen($code) == 5 && substr($code, -3) === '000') {
+                    $prefix = substr($code, 0, 2);
+                    $childAccounts = Account::where('code', 'like', $prefix . '%')
+                        ->where('code', '!=', $code)
+                        ->with(['incomestatements.purchase'])
+                        ->get();
+
+                    foreach ($childAccounts as $child) {
+                        $childTotal = $child->incomestatements
+                            ->filter(function ($entry) {
+                                $valid = true;
+
+                                if ($this->startDate && $this->endDate) {
+                                    $entryDate = optional($entry->purchase)->date;
+                                    if (!$entryDate || $entryDate < $this->startDate || $entryDate > $this->endDate) {
+                                        $valid = false;
+                                    }
+                                }
+
+                                if ($this->projectId) {
+                                    if (optional($entry->purchase)->project_id != $this->projectId) {
+                                        $valid = false;
+                                    }
+                                }
+
+                                return $valid;
+                            })
+                            ->sum('nominal');
+
+                        $total += $childTotal;
+                    }
+                }
+
+                return 'Rp ' . number_format($total, 0, ',', '.');
+            });
+    }
+
+    public function columns(): array
+    {
+        return [
+            Column::make('ID', 'id'),
+            Column::make('Kode Akun', 'code')->sortable()->searchable(),
+            Column::make('Nama Akun', 'name')->sortable()->searchable(),
+            Column::make('Total Nominal', 'total_nominal')->sortable()->bodyAttribute('text-right'),
+        ];
     }
 
     public function relationSearch(): array
@@ -50,77 +170,8 @@ final class IncomestatementTable extends PowerGridComponent
         return [];
     }
 
-    public function fields(): PowerGridFields
-    {
-        return PowerGrid::fields()
-            ->add('id')
-            ->add('purchase_id')
-            ->add('item_description')
-            ->add('type')
-            ->add('nominal')
-            ->add('created_at');
-    }
-
-    public function columns(): array
-    {
-        return [
-            Column::make('Id', 'id'),
-            Column::make('Purchase id', 'purchase_id'),
-            Column::make('Item description', 'item_description')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Type', 'type')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Nominal', 'nominal')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Created at', 'created_at_formatted', 'created_at')
-                ->sortable(),
-
-            Column::make('Created at', 'created_at')
-                ->sortable()
-                ->searchable(),
-
-            Column::action('Action')
-        ];
-    }
-
     public function filters(): array
     {
-        return [
-        ];
+        return [];
     }
-
-    #[\Livewire\Attributes\On('edit')]
-    public function edit($rowId): void
-    {
-        $this->js('alert('.$rowId.')');
-    }
-
-    public function actions(Incomestatement $row): array
-    {
-        return [
-            Button::add('edit')
-                ->slot('Edit: '.$row->id)
-                ->id()
-                ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
-                ->dispatch('edit', ['rowId' => $row->id])
-        ];
-    }
-
-    /*
-    public function actionRules($row): array
-    {
-       return [
-            // Hide button edit for ID 1
-            Rule::button('edit')
-                ->when(fn($row) => $row->id === 1)
-                ->hide(),
-        ];
-    }
-    */
 }

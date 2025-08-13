@@ -57,64 +57,37 @@ final class PurchaseTable extends PowerGridComponent
             ->add('balance')
             ->add('total_ppn')
             ->add('created_at')
-            ->add('detail', fn (Purchase $model) => Blade::render('<x-button href="'. route('purchase.show',['id'=>$model->id]) .'" light positive label="Detail" />'));
-    
+            ->add('account_id')
+            ->add('detail', fn (Purchase $model) =>
+   Blade::render('
+                    <div class="flex gap-2">
+                        <x-button href="' . route('purchase.show', ['id' => $model->id]) . '" light positive label="Detail" />
+                        <x-button href="' . route('purchase.item.create', ['id' => $model->id]) . '" light positive label="Tambah Item" />
+                    </div>
+                ')
+            );
     }
 
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id'),
-            Column::make('Date', 'date_formatted', 'date')
-                ->sortable(),
-
-            Column::make('Po no', 'po_no')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Company', 'company')
-                ->sortable()
-                ->searchable(),
-
+            // Column::make('Id', 'id'),
+            Column::make('Date', 'date_formatted', 'date')->sortable(),
+            Column::make('Po no', 'po_no')->sortable()->searchable(),
+            Column::make('Company', 'company')->sortable()->searchable(),
             Column::make('Project id', 'project_id'),
             Column::make('Vendor id', 'vendor_id'),
-            Column::make('Package', 'package')
-                ->sortable()
-                ->searchable(),
+            Column::make('Package', 'package')->sortable()->searchable(),
+            Column::make('Rep name', 'rep_name')->sortable()->searchable(),
+            Column::make('Phone', 'phone')->sortable()->searchable(),
+            Column::make('Total amount', 'total_amount')->sortable()->searchable(),
+            Column::make('Qty', 'qty')->sortable()->searchable(),
+            Column::make('Account id', 'account_id')->sortable()->searchable(),
+            Column::make('Detail', 'detail'),
 
-            Column::make('Rep name', 'rep_name')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Phone', 'phone')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Total amount', 'total_amount')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Qty', 'qty')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Balance', 'balance')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Total ppn', 'total_ppn')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Created at', 'created_at_formatted', 'created_at')
-                ->sortable(),
-
-            Column::make('Created at', 'created_at')
-                ->sortable()
-                ->searchable(),
-
-           Column::make('Detail', 'detail'),
-           Column::action('Action'),
+        
+            // Kolom untuk tombol aksi (Tambah Item & lainnya)
+            Column::action('Action'),
         ];
     }
 
@@ -134,6 +107,11 @@ final class PurchaseTable extends PowerGridComponent
     public function actions(Purchase $row): array
     {
         return [
+            Button::add('add-item')
+                ->slot('Tambah Item')
+                ->class('bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600')
+                ->route('purchase.item.create', ['id' => $row->id]),
+
             Button::add('edit')
                 ->slot('Edit: '.$row->id)
                 ->id()
@@ -141,16 +119,4 @@ final class PurchaseTable extends PowerGridComponent
                 ->dispatch('edit', ['rowId' => $row->id])
         ];
     }
-
-    /*
-    public function actionRules($row): array
-    {
-       return [
-            // Hide button edit for ID 1
-            Rule::button('edit')
-                ->when(fn($row) => $row->id === 1)
-                ->hide(),
-        ];
-    }
-    */
 }
