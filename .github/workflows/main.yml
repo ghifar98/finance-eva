@@ -144,12 +144,9 @@ jobs:
             rm build.tar.gz
 
             # sync tanpa owner & group, exclude folder sensitif
-            rsync -avz --delete \
-              --no-owner --no-group \
-              --exclude "storage/logs" \
-              --exclude "storage/framework/cache/data" \
-              --exclude "node_modules" \
-              tmp_release/ .
+            rsync -avz --delete --no-owner --no-group \
+            -e "sshpass -p ${{ secrets.SERVER_PASSWORD }} ssh -o StrictHostKeyChecking=no" \
+            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/finance-eva
 
             # bersihkan tmp
             rm -rf tmp_release
