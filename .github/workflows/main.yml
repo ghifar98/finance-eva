@@ -1,0 +1,168 @@
+name: Validate And Push
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+
+      - run: echo "VITE_BASEURL=https://inderasaepratama.co.id" > .env
+      - run: echo "APP_NAME=Laravel" >> .env
+      - run: echo "APP_ENV=local" >> .env
+      - run: echo "APP_KEY=base64:tToIv5vb/7rjVeYmEh2jwBrwmre1+JCJAJ7yu/FIBZo=" >> .env
+      - run: echo "APP_DEBUG=true" >> .env
+      - run: echo "DEBUGBAR_ENABLED=true" >> .env
+      - run: echo "APP_URL=http://finance-eva.test" >> .env
+      
+      - run: echo "APP_LOCALE=en" >> .env
+      - run: echo "APP_FALLBACK_LOCALE=en" >> .env
+      - run: echo "APP_FAKER_LOCALE=en_US" >> .env
+      
+      - run: echo "APP_MAINTENANCE_DRIVER=file" >> .env
+      # - run: echo "APP_MAINTENANCE_STORE=database" >> .env
+      
+      - run: echo "PHP_CLI_SERVER_WORKERS=4" >> .env
+      - run: echo "BCRYPT_ROUNDS=12" >> .env
+      
+      - run: echo "LOG_CHANNEL=stack" >> .env
+      - run: echo "LOG_STACK=single" >> .env
+      - run: echo "LOG_DEPRECATIONS_CHANNEL=null" >> .env
+      - run: echo "LOG_LEVEL=debug" >> .env
+      
+      - run: echo "DB_CONNECTION=mysql" >> .env
+      - run: echo "DB_HOST=127.0.0.1" >> .env
+      - run: echo "DB_PORT=3306" >> .env
+      - run: echo "DB_DATABASE=finance" >> .env
+      - run: echo "DB_USERNAME=root" >> .env
+      - run: echo "DB_PASSWORD=" >> .env
+      
+      - run: echo "SESSION_DRIVER=database" >> .env
+      - run: echo "SESSION_LIFETIME=120" >> .env
+      - run: echo "SESSION_ENCRYPT=false" >> .env
+      - run: echo "SESSION_PATH=/" >> .env
+      - run: echo "SESSION_DOMAIN=null" >> .env
+      
+      - run: echo "BROADCAST_CONNECTION=log" >> .env
+      - run: echo "FILESYSTEM_DISK=local" >> .env
+      - run: echo "QUEUE_CONNECTION=database" >> .env
+      
+      - run: echo "CACHE_STORE=database" >> .env
+      # - run: echo "CACHE_PREFIX=" >> .env
+      
+      - run: echo "MEMCACHED_HOST=127.0.0.1" >> .env
+      
+      - run: echo "REDIS_CLIENT=phpredis" >> .env
+      - run: echo "REDIS_HOST=127.0.0.1" >> .env
+      - run: echo "REDIS_PASSWORD=null" >> .env
+      - run: echo "REDIS_PORT=6379" >> .env
+      
+      - run: echo "MAIL_MAILER=log" >> .env
+      - run: echo "MAIL_SCHEME=null" >> .env
+      - run: echo "MAIL_HOST=127.0.0.1" >> .env
+      - run: echo "MAIL_PORT=2525" >> .env
+      - run: echo "MAIL_USERNAME=null" >> .env
+      - run: echo "MAIL_PASSWORD=null" >> .env
+      - run: echo 'MAIL_FROM_ADDRESS="hello@example.com"' >> .env
+      - run: echo 'MAIL_FROM_NAME="${APP_NAME}"' >> .env
+      
+      - run: echo "AWS_ACCESS_KEY_ID=" >> .env
+      - run: echo "AWS_SECRET_ACCESS_KEY=" >> .env
+      - run: echo "AWS_DEFAULT_REGION=us-east-1" >> .env
+      - run: echo "AWS_BUCKET=" >> .env
+      - run: echo "AWS_USE_PATH_STYLE_ENDPOINT=false" >> .env
+      
+      - run: echo 'VITE_APP_NAME="${APP_NAME}"' >> .env
+
+      
+      
+
+      - run: npm run build
+      - run: composer install --no-dev --optimize-autoloader
+      - run: |
+              tar -czf build.tar.gz \
+              --exclude=.git \
+              --exclude=node_modules \
+              --exclude=tests \
+              --exclude=storage/logs \
+              --exclude=storage/framework/cache \
+              .
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: build.tar.gz
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+
+      - name: Copy build to server
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "build.tar.gz"
+          target: "/var/www/finance-eva"
+
+      - name: Deploying to VPS
+        uses: appleboy/ssh-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            cd /var/www/finance-eva
+            rm -rf old_project
+            tar -xzf build.tar.gz
+            rm build.tar.gz
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+  # sync-to-dev:
+  #   needs: deploy
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - name: Checkout master branch
+  #       uses: actions/checkout@v4
+
+  #     - name: Configure Git
+  #       run: |
+  #         git config user.name "github-actions[bot]"
+  #         git config user.email "github-actions[bot]@users.noreply.github.com"
+
+  #     - name: Fetch all branches
+  #       run: git fetch --unshallow
+
+  #     - name: Force push master to dev
+  #       run: |
+  #         git checkout master
+  #         git branch -f dev
+  #         git push origin dev --force
