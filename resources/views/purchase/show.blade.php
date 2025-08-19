@@ -14,7 +14,7 @@
                 {{-- Action Buttons --}}
                 <div class="flex gap-x-2">
                     <x-button label="Back" href="{{ route('purchase.index') }}" />
-                    {{-- <x-button label="Edit" primary href="{{ route('purchase.edit', $purchase->id) }}" /> --}}
+                    <x-button label="View Items & Status" primary href="{{ route('purchase.items', $purchase->id) }}" />
                 </div>
             </div>
 
@@ -53,52 +53,18 @@
                         {{ $purchase->created_at->format('d M Y H:i') }}
                     </dd>
                 </div>
-                 <div class="md:col-span-2">
-                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</dt>
+                
+                <div class="md:col-span-2">
+                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Status</dt>
                     <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                        {{ $purchase->created_at->format('d M Y H:i') }}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            @if($purchase->status == 'disetujui') bg-green-100 text-green-800
+                            @elseif($purchase->status == 'ditolak') bg-red-100 text-red-800
+                            @else bg-yellow-100 text-yellow-800 @endif">
+                            {{ $purchase->status }}
+                        </span>
                     </dd>
                 </div>
-                 <div class="md:col-span-2">
-                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">status</dt>
-                    <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                        {{ $purchase->status }}
-                    </dd>
-                </div>
-       <div class="mt-6 overflow-auto w-full">
-    <livewire:item-table :purchase-id="$purchase->id" />
-</div>
-<div class="mt-6 overflow-auto w-full">
-    <form action="{{ route('purchase.updatestatus', $purchase->id) }}" method="POST">
-        @csrf
-        <x-errors />
-        
-    <div class="mb-4">
-    <label for="account_id" class="block text-sm font-medium text-gray-700">Pilih Akun</label>
-    <select id="account_id" name="account_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-        @foreach ($accounts as $id => $name)
-            <option value="{{ $id }}" {{ $purchase->account_id == $id ? 'selected' : '' }}>
-                {{ $name }}
-            </option>
-        @endforeach
-    </select>
-</div>
-
-
-<x-select
-            name="status"
-            label="Status"
-            placeholder="e.g., Active, Pending, Stuck, Done"
-            value="{{ old('status', $purchase->status) }}"
-            corner-hint="Wajib diisi"
-             :options="['belum disetuji', 'disetujui', 'ditolak']"
-        />
-
-        <x-button label="Update Status" type="submit" primary />
-
-    </form>
-</div>
-
 
             </div>
         </div>
