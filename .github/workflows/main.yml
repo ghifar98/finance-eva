@@ -97,10 +97,6 @@ jobs:
       - run: |
           tar --warning=no-file-changed --ignore-failed-read -czf build.tar.gz \
             --exclude=.git \
-            --exclude=node_modules \
-            --exclude=tests \
-            --exclude=storage/logs \
-            --exclude=storage/framework/cache \
             .
 
       - name: Upload build artifact
