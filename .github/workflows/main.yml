@@ -91,6 +91,7 @@ jobs:
       
       
 
+      - run: npm i
       - run: npm run build
       - run: composer install --no-dev --optimize-autoloader
       - run: |
