@@ -76,6 +76,8 @@ final class PurchaseTable extends PowerGridComponent
             ->add('actions', fn (Purchase $model) =>
                 Blade::render('
                     <div class="flex items-center gap-2">
+                @if( Auth::user()?->isRole("finance_officer") )
+
                         <a href="' . route('purchase.show', ['id' => $model->id]) . '" 
                            class="group relative inline-flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,6 +86,7 @@ final class PurchaseTable extends PowerGridComponent
                             </svg>
                             Detail
                         </a>
+                        @endif
                         <a href="' . route('purchase.item.create', ['id' => $model->id]) . '" 
                            class="group relative inline-flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium shadow-lg hover:from-orange-600 hover:to-orange-700 transform hover:scale-105 transition-all duration-200">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

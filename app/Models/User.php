@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role_id', // ✅ tambahkan role_id
     ];
 
     /**
@@ -58,4 +59,11 @@ class User extends Authenticatable
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
+    public function role() {
+    return $this->belongsTo(Role::class);
+}
+
+public function isRole($roleName) {
+    return $this->role && $this->role->name === $roleName;
+}
 }

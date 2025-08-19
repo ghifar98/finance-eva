@@ -77,7 +77,7 @@ class AccountController extends Controller
     }
 
     public function destroy($id)
-    {
+   {
         $account = Account::findOrFail($id);
         $account->delete();
 

@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\MasterProject;
 
 class IncomeStatementController extends Controller
-{
+{ 
     public function index(Request $request)
     {
         $request->validate([

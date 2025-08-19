@@ -86,7 +86,6 @@ public function store(Request $request)
     // dd($ev,$progressValue, $bac , $progressValue / 100, $bac / 1000, $ev / 1000);
 
 
-
     // ✅ Ini PV dari rab_weeklies:
     $pv = $this->calculatePlannedValue($project->id, $validated['minggu_ke']);
 

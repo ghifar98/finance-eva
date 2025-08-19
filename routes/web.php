@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Livewire\Auth\Register as RegisterLivewire;
 use App\Http\Controllers\{
     AccountController,
     DashboardController,
@@ -13,6 +14,7 @@ use App\Http\Controllers\{
     RABController,
     RabWeeklyController,
     SubAccountController,
+    UserController,
     VendorController,
     WbsController
 };
@@ -138,6 +140,13 @@ Route::prefix('wbs')->name('wbs.')->group(function () {
     Route::post('/', [RabWeeklyController::class, 'store'])->name('store');
 });
 
+});
+Route::middleware('guest')->group(function () {
+    Route::get('register', RegisterLivewire::class)->name('register');
+});
+Route::middleware(['auth'])->group(function () {
+    Route::get('users/create', [UserController::class, 'create'])->name('users.create');
+    Route::post('users', [UserController::class, 'store'])->name('users.store');
 });
 
 require __DIR__.'/auth.php';
