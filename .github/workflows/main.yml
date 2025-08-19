@@ -20,83 +20,92 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          VITE_BASEURL=https://inderasaepratama.co.id
+          APP_NAME=Laravel
+          APP_ENV=production
+          APP_KEY=base64:tToIv5vb/7rjVeYmEh2jwBrwmre1+JCJAJ7yu/FIBZo=
+          APP_DEBUG=false
+          DEBUGBAR_ENABLED=false
+          APP_URL=http://103.179.254.127:8000
+          
+          APP_LOCALE=en
+          APP_FALLBACK_LOCALE=en
+          APP_FAKER_LOCALE=en_US
+          
+          APP_MAINTENANCE_DRIVER=file
+          
+          PHP_CLI_SERVER_WORKERS=4
+          BCRYPT_ROUNDS=12
+          
+          LOG_CHANNEL=stack
+          LOG_STACK=single
+          LOG_DEPRECATIONS_CHANNEL=null
+          LOG_LEVEL=error
+          
+          DB_CONNECTION=mysql
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_DATABASE=finance
+          DB_USERNAME=root
+          DB_PASSWORD=password
+          
+          SESSION_DRIVER=database
+          SESSION_LIFETIME=120
+          SESSION_ENCRYPT=false
+          SESSION_PATH=/
+          SESSION_DOMAIN=null
+          
+          BROADCAST_CONNECTION=log
+          FILESYSTEM_DISK=local
+          QUEUE_CONNECTION=database
+          
+          CACHE_STORE=database
+          
+          MEMCACHED_HOST=127.0.0.1
+          
+          REDIS_CLIENT=phpredis
+          REDIS_HOST=127.0.0.1
+          REDIS_PASSWORD=null
+          REDIS_PORT=6379
+          
+          MAIL_MAILER=log
+          MAIL_SCHEME=null
+          MAIL_HOST=127.0.0.1
+          MAIL_PORT=2525
+          MAIL_USERNAME=null
+          MAIL_PASSWORD=null
+          MAIL_FROM_ADDRESS="hello@example.com"
+          MAIL_FROM_NAME="${APP_NAME}"
+          
+          AWS_ACCESS_KEY_ID=
+          AWS_SECRET_ACCESS_KEY=
+          AWS_DEFAULT_REGION=us-east-1
+          AWS_BUCKET=
+          AWS_USE_PATH_STYLE_ENDPOINT=false
+          
+          VITE_APP_NAME="${APP_NAME}"
+          EOF
 
-      - run: echo "VITE_BASEURL=https://inderasaepratama.co.id" > .env
-      - run: echo "APP_NAME=Laravel" >> .env
-      - run: echo "APP_ENV=local" >> .env
-      - run: echo "APP_KEY=base64:tToIv5vb/7rjVeYmEh2jwBrwmre1+JCJAJ7yu/FIBZo=" >> .env
-      - run: echo "APP_DEBUG=true" >> .env
-      - run: echo "DEBUGBAR_ENABLED=true" >> .env
-      - run: echo "APP_URL=http://103.179.254.127:8000" >> .env
-      
-      - run: echo "APP_LOCALE=en" >> .env
-      - run: echo "APP_FALLBACK_LOCALE=en" >> .env
-      - run: echo "APP_FAKER_LOCALE=en_US" >> .env
-      
-      - run: echo "APP_MAINTENANCE_DRIVER=file" >> .env
-      # - run: echo "APP_MAINTENANCE_STORE=database" >> .env
-      
-      - run: echo "PHP_CLI_SERVER_WORKERS=4" >> .env
-      - run: echo "BCRYPT_ROUNDS=12" >> .env
-      
-      - run: echo "LOG_CHANNEL=stack" >> .env
-      - run: echo "LOG_STACK=single" >> .env
-      - run: echo "LOG_DEPRECATIONS_CHANNEL=null" >> .env
-      - run: echo "LOG_LEVEL=debug" >> .env
-      
-      - run: echo "DB_CONNECTION=mysql" >> .env
-      - run: echo "DB_HOST=127.0.0.1" >> .env
-      - run: echo "DB_PORT=3306" >> .env
-      - run: echo "DB_DATABASE=finance" >> .env
-      - run: echo "DB_USERNAME=root" >> .env
-      - run: echo "DB_PASSWORD=password" >> .env
-      
-      - run: echo "SESSION_DRIVER=database" >> .env
-      - run: echo "SESSION_LIFETIME=120" >> .env
-      - run: echo "SESSION_ENCRYPT=false" >> .env
-      - run: echo "SESSION_PATH=/" >> .env
-      - run: echo "SESSION_DOMAIN=null" >> .env
-      
-      - run: echo "BROADCAST_CONNECTION=log" >> .env
-      - run: echo "FILESYSTEM_DISK=local" >> .env
-      - run: echo "QUEUE_CONNECTION=database" >> .env
-      
-      - run: echo "CACHE_STORE=database" >> .env
-      # - run: echo "CACHE_PREFIX=" >> .env
-      
-      - run: echo "MEMCACHED_HOST=127.0.0.1" >> .env
-      
-      - run: echo "REDIS_CLIENT=phpredis" >> .env
-      - run: echo "REDIS_HOST=127.0.0.1" >> .env
-      - run: echo "REDIS_PASSWORD=null" >> .env
-      - run: echo "REDIS_PORT=6379" >> .env
-      
-      - run: echo "MAIL_MAILER=log" >> .env
-      - run: echo "MAIL_SCHEME=null" >> .env
-      - run: echo "MAIL_HOST=127.0.0.1" >> .env
-      - run: echo "MAIL_PORT=2525" >> .env
-      - run: echo "MAIL_USERNAME=null" >> .env
-      - run: echo "MAIL_PASSWORD=null" >> .env
-      - run: echo 'MAIL_FROM_ADDRESS="hello@example.com"' >> .env
-      - run: echo 'MAIL_FROM_NAME="${APP_NAME}"' >> .env
-      
-      - run: echo "AWS_ACCESS_KEY_ID=" >> .env
-      - run: echo "AWS_SECRET_ACCESS_KEY=" >> .env
-      - run: echo "AWS_DEFAULT_REGION=us-east-1" >> .env
-      - run: echo "AWS_BUCKET=" >> .env
-      - run: echo "AWS_USE_PATH_STYLE_ENDPOINT=false" >> .env
-      
-      - run: echo 'VITE_APP_NAME="${APP_NAME}"' >> .env
+      - name: Install dependencies
+        run: npm install
 
-      
-      
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
 
-      - run: npm i
-      - run: composer install --no-dev --optimize-autoloader
-      - run: npm run build
-      - run: |
+      - name: Build assets
+        run: npm run build
+
+      - name: Create deployment archive
+        run: |
           tar --warning=no-file-changed --ignore-failed-read -czf build.tar.gz \
             --exclude=.git \
+            --exclude=node_modules \
+            --exclude=.github \
+            --exclude=tests \
+            --exclude=.env.example \
             .
 
       - name: Upload build artifact
@@ -116,17 +125,7 @@ jobs:
         with:
           name: build-artifact
 
-      - name: Copy build to server
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          password: ${{ secrets.SERVER_PASSWORD }}
-          port: ${{ secrets.SERVER_PORT }}
-          source: "build.tar.gz"
-          target: "/var/www/finance-eva"
-
-      - name: Deploying to VPS
+      - name: Deploy to server
         uses: appleboy/ssh-action@v0.1.4
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -134,32 +133,96 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
+            # Create backup directory with timestamp
+            BACKUP_DIR="/var/www/backups/finance-eva-$(date +%Y%m%d-%H%M%S)"
+            sudo mkdir -p /var/www/backups
+            
+            # Backup current deployment if it exists
+            if [ -d "/var/www/finance-eva" ]; then
+              echo "Creating backup..."
+              sudo cp -r /var/www/finance-eva $BACKUP_DIR
+            fi
+            
+            # Create deployment directory
+            sudo mkdir -p /var/www/finance-eva
             cd /var/www/finance-eva
 
-            # pastikan folder sementara
-            mkdir -p tmp_release
+      - name: Copy and extract build
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "build.tar.gz"
+          target: "/tmp/"
 
-            # extract artifact ke tmp
-            tar -xzf build.tar.gz -C tmp_release
+      - name: Extract and setup application
+        uses: appleboy/ssh-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            # Extract to temporary directory
+            cd /tmp
+            rm -rf finance-eva-new
+            mkdir -p finance-eva-new
+            tar -xzf build.tar.gz -C finance-eva-new
             rm build.tar.gz
-
-            # sync tanpa owner & group, exclude folder sensitif
-            rsync -avz --delete --no-owner --no-group \
-            -e "sshpass -p ${{ secrets.SERVER_PASSWORD }} ssh -o StrictHostKeyChecking=no" \
-            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/finance-eva
-
-            # bersihkan tmp
-            rm -rf tmp_release
-
-            # perbaiki permission agar Laravel jalan
-            chmod -R ug+rw storage bootstrap/cache
-            chown -R www-data:www-data storage bootstrap/cache || true
-
-            # regenerate Laravel cache
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-
+            
+            # Preserve existing storage and .env if they exist
+            if [ -d "/var/www/finance-eva/storage" ]; then
+              echo "Preserving existing storage directory..."
+              sudo cp -r /var/www/finance-eva/storage /tmp/finance-eva-new/
+            fi
+            
+            if [ -f "/var/www/finance-eva/.env" ]; then
+              echo "Preserving existing .env file..."
+              sudo cp /var/www/finance-eva/.env /tmp/finance-eva-new/
+            fi
+            
+            # Replace application files
+            sudo rm -rf /var/www/finance-eva/*
+            sudo rm -rf /var/www/finance-eva/.[^.]*
+            sudo mv /tmp/finance-eva-new/* /var/www/finance-eva/
+            sudo mv /tmp/finance-eva-new/.[^.]* /var/www/finance-eva/ 2>/dev/null || true
+            
+            # Clean up
+            rm -rf /tmp/finance-eva-new
+            
+            # Set proper ownership and permissions
+            sudo chown -R www-data:www-data /var/www/finance-eva
+            sudo find /var/www/finance-eva -type f -exec chmod 644 {} \;
+            sudo find /var/www/finance-eva -type d -exec chmod 755 {} \;
+            
+            # Set executable permissions for artisan
+            sudo chmod +x /var/www/finance-eva/artisan
+            
+            # Set writable permissions for Laravel directories
+            sudo chmod -R 775 /var/www/finance-eva/storage
+            sudo chmod -R 775 /var/www/finance-eva/bootstrap/cache
+            
+            # Navigate to application directory
+            cd /var/www/finance-eva
+            
+            # Clear and rebuild Laravel caches
+            echo "Clearing Laravel caches..."
+            sudo -u www-data php artisan config:clear || true
+            sudo -u www-data php artisan route:clear || true
+            sudo -u www-data php artisan view:clear || true
+            sudo -u www-data php artisan cache:clear || true
+            
+            echo "Rebuilding Laravel caches..."
+            sudo -u www-data php artisan config:cache
+            sudo -u www-data php artisan route:cache
+            sudo -u www-data php artisan view:cache
+            
+            # Restart web server (adjust based on your setup)
+            sudo systemctl reload nginx || sudo systemctl reload apache2 || true
+            
+            echo "Deployment completed successfully!"
 
   # sync-to-dev:
   #   needs: deploy
