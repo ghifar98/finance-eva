@@ -92,8 +92,8 @@ jobs:
       
 
       - run: npm i
-      - run: npm run build
       - run: composer install --no-dev --optimize-autoloader
+      - run: npm run build
       - run: |
               tar -czf build.tar.gz \
               --exclude=.git \
