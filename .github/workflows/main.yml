@@ -135,14 +135,34 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           script: |
             cd /var/www/finance-eva
-            mkdir tmp_release
+
+            # pastikan folder sementara
+            mkdir -p tmp_release
+
+            # extract artifact ke tmp
             tar -xzf build.tar.gz -C tmp_release
             rm build.tar.gz
-            rsync -a tmp_release/ .
+
+            # sync tanpa owner & group, exclude folder sensitif
+            rsync -avz --delete \
+              --no-owner --no-group \
+              --exclude "storage/logs" \
+              --exclude "storage/framework/cache/data" \
+              --exclude "node_modules" \
+              tmp_release/ .
+
+            # bersihkan tmp
             rm -rf tmp_release
+
+            # perbaiki permission agar Laravel jalan
+            chmod -R ug+rw storage bootstrap/cache
+            chown -R www-data:www-data storage bootstrap/cache || true
+
+            # regenerate Laravel cache
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
+
 
   # sync-to-dev:
   #   needs: deploy
