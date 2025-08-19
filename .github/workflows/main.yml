@@ -95,13 +95,13 @@ jobs:
       - run: composer install --no-dev --optimize-autoloader
       - run: npm run build
       - run: |
-              tar -czf build.tar.gz \
-              --exclude=.git \
-              --exclude=node_modules \
-              --exclude=tests \
-              --exclude=storage/logs \
-              --exclude=storage/framework/cache \
-              .
+          tar --warning=no-file-changed --ignore-failed-read -czf build.tar.gz \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude=tests \
+            --exclude=storage/logs \
+            --exclude=storage/framework/cache \
+            .
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
