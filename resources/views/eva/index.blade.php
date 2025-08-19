@@ -191,19 +191,115 @@
                             </div>
                         </div>
 
-                        <!-- Notes Section -->
-                        <form action="{{ route('eva.updateNotes', $eva->id) }}" method="POST" class="mt-4">
-                            @csrf
-                            <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                                <textarea name="notes" rows="2" class="w-full sm:w-96 rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Tambahkan atau edit catatan...">{{ old('notes', $eva->notes) }}</textarea>
-                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm">
-                                    Simpan Catatan
-                                </button>
+                        <!-- Notes Section with Edit Toggle -->
+                        <div class="mt-4 border-t border-gray-200 pt-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="text-sm font-medium text-gray-700">Catatan</h4>
+                                @if(!empty($eva->notes))
+                                    <button onclick="toggleEdit({{ $eva->id }})" id="edit-btn-{{ $eva->id }}" class="text-sm text-blue-600 hover:text-blue-800 transition flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Edit
+                                    </button>
+                                @endif
                             </div>
-                        </form>
+
+                            <!-- Display Notes (Read Mode) -->
+                            <div id="notes-display-{{ $eva->id }}" class="{{ empty($eva->notes) ? 'hidden' : '' }}">
+                                <div class="bg-gray-50 border border-gray-200 rounded-md p-3 min-h-[60px]">
+                                    <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ $eva->notes ?: 'Belum ada catatan.' }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Edit Form (Edit Mode) -->
+                            <form action="{{ route('eva.updateNotes', $eva->id) }}" method="POST" id="notes-form-{{ $eva->id }}" class="{{ !empty($eva->notes) ? 'hidden' : '' }}">
+                                @csrf
+                                <div class="flex flex-col gap-3">
+                                    <textarea 
+                                        name="notes" 
+                                        rows="3" 
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm" 
+                                        placeholder="Tambahkan catatan untuk EVA ini..."
+                                        id="notes-input-{{ $eva->id }}"
+                                    >{{ old('notes', $eva->notes) }}</textarea>
+                                    <div class="flex gap-2">
+                                        <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            Simpan
+                                        </button>
+                                        @if(!empty($eva->notes))
+                                            <button type="button" onclick="cancelEdit({{ $eva->id }})" class="px-3 py-1.5 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition text-sm flex items-center gap-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                                Batal
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 @endforeach
             </div>
         @endif
     </div>
+
+    <script>
+        function toggleEdit(evaId) {
+            const displayDiv = document.getElementById(`notes-display-${evaId}`);
+            const formDiv = document.getElementById(`notes-form-${evaId}`);
+            const editBtn = document.getElementById(`edit-btn-${evaId}`);
+            
+            // Hide display, show form
+            displayDiv.classList.add('hidden');
+            formDiv.classList.remove('hidden');
+            
+            // Focus on textarea
+            document.getElementById(`notes-input-${evaId}`).focus();
+            
+            // Hide edit button
+            editBtn.classList.add('hidden');
+        }
+
+        function cancelEdit(evaId) {
+            const displayDiv = document.getElementById(`notes-display-${evaId}`);
+            const formDiv = document.getElementById(`notes-form-${evaId}`);
+            const editBtn = document.getElementById(`edit-btn-${evaId}`);
+            const textarea = document.getElementById(`notes-input-${evaId}`);
+            
+            // Reset textarea value to original
+            const originalNotes = displayDiv.querySelector('p').textContent;
+            textarea.value = originalNotes === 'Belum ada catatan.' ? '' : originalNotes;
+            
+            // Show display, hide form
+            displayDiv.classList.remove('hidden');
+            formDiv.classList.add('hidden');
+            
+            // Show edit button
+            editBtn.classList.remove('hidden');
+        }
+
+        // Auto-hide form after successful submission (if using session flash)
+        @if(session('success'))
+            document.addEventListener('DOMContentLoaded', function() {
+                // Find the EVA that was just updated and switch to display mode
+                const forms = document.querySelectorAll('[id^="notes-form-"]');
+                forms.forEach(form => {
+                    const evaId = form.id.split('-')[2];
+                    const displayDiv = document.getElementById(`notes-display-${evaId}`);
+                    const editBtn = document.getElementById(`edit-btn-${evaId}`);
+                    
+                    if (displayDiv && editBtn) {
+                        form.classList.add('hidden');
+                        displayDiv.classList.remove('hidden');
+                        editBtn.classList.remove('hidden');
+                    }
+                });
+            });
+        @endif
+    </script>
 </x-layouts.app>

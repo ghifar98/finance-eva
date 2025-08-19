@@ -72,16 +72,26 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/edit', [VendorController::class, 'edit'])->name('edit');
     });
 
-    // Purchase
-    Route::prefix('purchase')->name('purchase.')->group(function () {
-        Route::get('/', [PurchaseController::class, 'index'])->name('index');
-        Route::get('/create', [PurchaseController::class, 'create'])->name('create');
-        Route::post('/store', [PurchaseController::class, 'store'])->name('store');
-        Route::get('/{id}/show', [PurchaseController::class, 'show'])->name('show');
-        Route::get('/{id}/item/create', [ItemController::class, 'create'])->name('item.create');
-        Route::post('/{id}/item/store', [ItemController::class, 'store'])->name('item.store');
-        Route::post('/{id}/updatestatus', [PurchaseController::class, 'updatestatus'])->name('updatestatus');
-    });
+Route::prefix('purchase')->name('purchase.')->group(function () {
+    Route::get('/', [PurchaseController::class, 'index'])->name('index');
+    Route::get('/create', [PurchaseController::class, 'create'])->name('create');
+    Route::post('/', [PurchaseController::class, 'store'])->name('store');
+    Route::get('/{id}', [PurchaseController::class, 'show'])->name('show');
+    
+    // Route untuk halaman items dan status - tetap di PurchaseController
+    Route::get('/{id}/items', [PurchaseController::class, 'items'])->name('items');
+    Route::post('/{id}/updatestatus', [PurchaseController::class, 'updatestatus'])->name('updatestatus');
+});
+
+// ✅ PERBAIKAN: Item routes dengan prefix purchase untuk konsistensi
+Route::prefix('purchase')->name('purchase.')->group(function () {
+    // Routes item menggunakan ItemController tapi tetap dengan prefix purchase
+    Route::get('/{id}/item/create', [ItemController::class, 'create'])->name('item.create');
+    Route::post('/{id}/item/store', [ItemController::class, 'store'])->name('item.store');
+    Route::get('/{purchaseId}/item/{itemId}/edit', [ItemController::class, 'edit'])->name('item.edit');
+    Route::put('/{purchaseId}/item/{itemId}/update', [ItemController::class, 'update'])->name('item.update');
+    Route::delete('/{purchaseId}/item/{itemId}/delete', [ItemController::class, 'destroy'])->name('item.delete');
+});
 
     // General Ledger & Income Statement
     Route::get('generalleadger', [GeneralleadgerController::class, 'index'])->name('generalleadger.index');

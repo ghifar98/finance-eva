@@ -38,24 +38,37 @@
                         value="PT. INDERA SAE PRATAMA"
                         readonly
                     />
+{{-- Ganti x-select project dengan ini --}}
+<div>
+    <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Project <span class="text-red-500">*</span>
+    </label>
+    <select name="project_id" id="project_id" 
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+        <option value="">Select project</option>
+        @foreach($projects as $project)
+            <option value="{{ $project->id }}" {{ old('project_id') == $project->id ? 'selected' : '' }}>
+                {{ $project->project_name }}
+            </option>
+        @endforeach
+    </select>
+</div>
 
-                    <x-select
-                        name="project_id"
-                        label="Project"
-                        :options="$projects"
-                        placeholder="Select project"
-                        :selected="old('project_id')"
-                        option-label="project_name" option-value="id"
-                    />
-
-                    <x-select
-                        name="vendor_id"
-                        label="Vendor"
-                        :options="$vendors"
-                        placeholder="Select vendor"
-                        :selected="old('vendor_id')"
-                        option-label="name" option-value="id"
-                    />
+{{-- Ganti x-select vendor dengan ini --}}
+<div>
+    <label for="vendor_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Vendor <span class="text-red-500">*</span>
+    </label>
+    <select name="vendor_id" id="vendor_id" 
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+        <option value="">Select vendor</option>
+        @foreach($vendors as $vendor)
+            <option value="{{ $vendor->id }}" {{ old('vendor_id') == $vendor->id ? 'selected' : '' }}>
+                {{ $vendor->name }}
+            </option>
+        @endforeach
+    </select>
+</div>
 
                                         <x-input
                         name="package"
