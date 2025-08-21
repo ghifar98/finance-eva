@@ -11,31 +11,31 @@ use Carbon\CarbonPeriod;
 
 class MasterProjectController extends Controller
 {
-   public function index()
-{
-    $activeProjects = MasterProject::with('user')
-        ->where('progress', '<', 100)
-        ->orderBy('created_at', 'desc')
-        ->get();
+    public function index()
+    {
+        $activeProjects = MasterProject::with('user')
+            ->where('progress', '<', 100)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-    $completedProjects = MasterProject::with('user')
-        ->where('progress', '>=', 100)
-        ->orderBy('updated_at', 'desc')
-        ->get();
+        $completedProjects = MasterProject::with('user')
+            ->where('progress', '>=', 100)
+            ->orderBy('updated_at', 'desc')
+            ->get();
 
-    return view('master-project.index', [
-        'activeProjects' => $activeProjects,
-        'completedProjects' => $completedProjects,
-        'totalProjects' => MasterProject::count(),
-        'activeProjectsCount' => $activeProjects->count(),
-        'completedProjectsCount' => $completedProjects->count()
-    ]);
-}
-    
-    public function create(){
-        return view('master-project/create');
+        return view('master-project.index', [
+            'activeProjects' => $activeProjects,
+            'completedProjects' => $completedProjects,
+            'totalProjects' => MasterProject::count(),
+            'activeProjectsCount' => $activeProjects->count(),
+            'completedProjectsCount' => $completedProjects->count()
+        ]);
     }
-    
+
+    public function create()
+    {
+        return view('master-project.create');
+    }
     public function getProjects(){
         $projects = MasterProject::with('user')->get();
         return response()->json($projects);
@@ -46,23 +46,35 @@ class MasterProjectController extends Controller
     }
     
     
-    public function store(Request $request){
+    public function store(Request $request)
+    {
         $request->validate([
+            'kode_project' => 'required|string|max:255',
             'project_name' => 'required|string|max:255',
-            'project_description' => 'nullable|string|max:1000',
-            'tahun' => 'nullable|integer',
-            'nilai' => 'nullable|numeric',
-            'kontrak' => 'string|max:255',
             'vendor' => 'nullable|string|max:255',
+            'tahun' => 'nullable|integer',
+            'kontrak' => 'nullable|string|max:255',
+            'nilai' => 'nullable|string',
             'start_project' => 'nullable|date',
             'end_project' => 'nullable|date',
-            'rab' => 'nullable|string|max:255',
-            'data_proyek' => 'nullable|file|mimes:pdf,jpg,png'
+            'asal_kode' => 'nullable|string|max:255',
+            'data_proyek' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048'
         ]);
 
         $data = $request->all();
         $data['user_id'] = Auth::id();
-        $data['progress'] = 0; // Default progress 0%
+        $data['progress'] = 0;
+
+        // Convert nilai ke angka murni
+        if ($request->filled('nilai')) {
+            $data['nilai'] = preg_replace('/[^\d]/', '', $request->nilai);
+        }
+
+        // Upload dokumen
+        if ($request->hasFile('data_proyek')) {
+            $path = $request->file('data_proyek')->store('projects', 'public');
+            $data['data_proyek'] = $path;
+        }
 
         MasterProject::create($data);
 
@@ -131,26 +143,38 @@ public function show($id)
         return view('master-project/edit', compact('project'));
     }
     
-    public function update(Request $request, $id){
+public function update(Request $request, $id)
+    {
         $request->validate([
+            'kode_project' => 'required|string|max:255',
             'project_name' => 'required|string|max:255',
-            'project_description' => 'nullable|string|max:1000',
-            'tahun' => 'nullable|integer',
-            'nilai' => 'nullable|numeric',
-            'kontrak' => 'string|max:255',
             'vendor' => 'nullable|string|max:255',
+            'tahun' => 'nullable|integer',
+            'kontrak' => 'nullable|string|max:255',
+            'nilai' => 'nullable|string',
             'start_project' => 'nullable|date',
             'end_project' => 'nullable|date',
-            'rab' => 'nullable|string|max:255',
-            'data_proyek' => 'nullable|file|mimes:pdf,jpg,png'
+            'asal_kode' => 'nullable|string|max:255',
+            'data_proyek' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048'
         ]);
 
         $project = MasterProject::findOrFail($id);
-        $project->update($request->all());
+        $data = $request->all();
+
+        if ($request->filled('nilai')) {
+            $data['nilai'] = preg_replace('/[^\d]/', '', $request->nilai);
+        }
+
+        if ($request->hasFile('data_proyek')) {
+            $path = $request->file('data_proyek')->store('projects', 'public');
+            $data['data_proyek'] = $path;
+        }
+
+        $project->update($data);
 
         return redirect()->route('master-projects.index')->with('success', 'Project updated successfully.');
     }
-    
+
     public function destroy($id){
         $project = MasterProject::findOrFail($id);
         
@@ -219,5 +243,55 @@ public function show($id)
 
     return redirect()->back()
         ->with('success', 'Progres berhasil disimpan!');
+}
+public function downloadDocument($id)
+{
+    $project = MasterProject::findOrFail($id);
+    
+    if (!$project->data_proyek) {
+        abort(404, 'Dokumen tidak ditemukan');
+    }
+    
+    $path = public_path('storage/' . $project->data_proyek);
+    
+    if (!file_exists($path)) {
+        abort(404, 'File tidak ditemukan');
+    }
+    
+    $filename = $project->project_name . '_' . basename($path);
+    
+    return response()->download($path, $filename, [
+        'Content-Type' => mime_content_type($path),
+    ]);
+}
+public function streamDocument($id)
+{
+    $project = MasterProject::findOrFail($id);
+    
+    if (!$project->data_proyek) {
+        abort(404, 'Dokumen tidak ditemukan');
+    }
+    
+    $path = public_path('storage/' . $project->data_proyek);
+    
+    if (!file_exists($path)) {
+        abort(404, 'File tidak ditemukan');
+    }
+    
+    $fileSize = filesize($path);
+    $mimeType = mime_content_type($path);
+    
+    return response()->stream(function () use ($path) {
+        $handle = fopen($path, 'rb');
+        while (!feof($handle)) {
+            echo fread($handle, 1024 * 8); // Read 8KB chunks
+            flush();
+        }
+        fclose($handle);
+    }, 200, [
+        'Content-Type' => $mimeType,
+        'Content-Length' => $fileSize,
+        'Cache-Control' => 'public, max-age=3600',
+    ]);
 }
 }

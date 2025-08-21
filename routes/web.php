@@ -148,5 +148,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('users', [UserController::class, 'store'])->name('users.store');
 });
-
+Route::get('/project/{id}/download-document', [MasterProjectController::class, 'downloadDocument'])
+    ->name('project.document.download');
+    Route::get('/project/{id}/stream-document', [MasterProjectController::class, 'streamDocument'])
+    ->name('project.document.stream');
 require __DIR__.'/auth.php';

@@ -3,108 +3,74 @@
 namespace App\Http\Controllers;
 
 use App\Models\Item;
-use App\Models\Purchase;
+use App\Models\Purchase; // Pastikan model Purchase di-import
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB; // Import DB Facade for transactions
 
 class ItemController extends Controller
 {
     public function create($id)
     {
         $purchase = Purchase::findOrFail($id);
-        return view('item.create', compact('purchase'));
+        return view('item.create')->with('purchase', $purchase);
     }
-    
+
     public function store(Request $request, $id)
     {
+        // Validasi untuk array of items
         $request->validate([
-            'item_description' => 'required|string|max:255',
-            'unit' => 'required|string|max:50',
-            'qty' => 'required|numeric|min:0',
-            'weight' => 'nullable|numeric|min:0',
-            'kg_per_item' => 'nullable|numeric|min:0',
-            'u_price' => 'required|numeric|min:0',
+            'items' => 'required|array|min:1',
+            'items.*.item_description' => 'required|string|max:255',
+            'items.*.unit' => 'required|string|max:50',
+            'items.*.qty' => 'required|numeric|min:0',
+            'items.*.weight' => 'nullable|numeric|min:0',
+            'items.*.kg_per_item' => 'nullable|numeric|min:0',
+            'items.*.u_price' => 'required|string', // Terima sebagai string karena format Rupiah
+            // 'amount' tidak perlu divalidasi karena akan dihitung di backend
         ], [
-            'item_description.required' => 'Deskripsi item wajib diisi.',
-            'unit.required' => 'Satuan harus diisi.',
-            'qty.required' => 'Jumlah harus diisi.',
-            'u_price.required' => 'Harga satuan harus diisi.',
+            'items.*.item_description.required' => 'Deskripsi item wajib diisi.',
+            'items.*.unit.required' => 'Satuan harus diisi.',
+            'items.*.qty.required' => 'Jumlah harus diisi.',
+            'items.*.u_price.required' => 'Harga satuan harus diisi.',
         ]);
 
-        $amount = $request->qty * $request->u_price; // Calculate amount
-
-        $data = $request->all();
-        $data['purchase_id'] = $id;
-        $data['amount'] = $amount;
-        
-        Item::create($data);
-
-        // Update purchase totals
         $purchase = Purchase::findOrFail($id);
-        $purchase->total_amount += $amount;
-        $purchase->qty += $request->qty;
-        $purchase->save();
+        $totalAmountAdded = 0;
+        $totalQtyAdded = 0;
 
-        return redirect()->route('purchase.items', $id)->with('success', 'Item berhasil ditambahkan.');
-    }
+        // Gunakan database transaction untuk memastikan semua data tersimpan atau tidak sama sekali
+        DB::transaction(function () use ($request, $purchase, &$totalAmountAdded, &$totalQtyAdded) {
+            foreach ($request->items as $itemData) {
+                // 1. Bersihkan format Rupiah dari u_price sebelum perhitungan
+                $unitPrice = (float) preg_replace('/[^\d]/', '', $itemData['u_price']);
+                $quantity = (float) $itemData['qty'];
+                
+                // 2. Hitung amount di backend sebagai sumber kebenaran
+                $amount = $quantity * $unitPrice;
 
-    public function edit($purchaseId, $itemId)
-    {
-        $purchase = Purchase::findOrFail($purchaseId);
-        $item = Item::where('purchase_id', $purchaseId)->findOrFail($itemId);
-        
-        return view('item.edit', compact('purchase', 'item'));
-    }
+                // 3. Buat item baru
+                Item::create([
+                    'purchase_id' => $purchase->id,
+                    'item_description' => $itemData['item_description'],
+                    'unit' => $itemData['unit'],
+                    'qty' => $quantity,
+                    'weight' => $itemData['weight'] ?? null,
+                    'kg_per_item' => $itemData['kg_per_item'] ?? null,
+                    'u_price' => $unitPrice,
+                    'amount' => $amount,
+                ]);
 
-    public function update(Request $request, $purchaseId, $itemId)
-    {
-        $request->validate([
-            'item_description' => 'required|string|max:255',
-            'unit' => 'required|string|max:50',
-            'qty' => 'required|numeric|min:0',
-            'weight' => 'nullable|numeric|min:0',
-            'kg_per_item' => 'nullable|numeric|min:0',
-            'u_price' => 'required|numeric|min:0',
-        ]);
+                // 4. Akumulasi total untuk diupdate ke purchase
+                $totalAmountAdded += $amount;
+                $totalQtyAdded += $quantity;
+            }
 
-        $item = Item::where('purchase_id', $purchaseId)->findOrFail($itemId);
-        $oldAmount = $item->amount;
-        $oldQty = $item->qty;
-        
-        $newAmount = $request->qty * $request->u_price;
-        
-        $item->update([
-            'item_description' => $request->item_description,
-            'unit' => $request->unit,
-            'qty' => $request->qty,
-            'weight' => $request->weight,
-            'kg_per_item' => $request->kg_per_item,
-            'u_price' => $request->u_price,
-            'amount' => $newAmount,
-        ]);
+            // 5. Update total di tabel Purchase setelah loop selesai
+            $purchase->total_amount += $totalAmountAdded;
+            $purchase->qty += $totalQtyAdded;
+            $purchase->save();
+        });
 
-        // Update purchase totals
-        $purchase = Purchase::findOrFail($purchaseId);
-        $purchase->total_amount = $purchase->total_amount - $oldAmount + $newAmount;
-        $purchase->qty = $purchase->qty - $oldQty + $request->qty;
-        $purchase->save();
-
-        return redirect()->route('purchase.items', $purchaseId)->with('success', 'Item berhasil diupdate.');
-    }
-
-    public function destroy($purchaseId, $itemId)
-    {
-        $item = Item::where('purchase_id', $purchaseId)->findOrFail($itemId);
-        $oldAmount = $item->amount;
-        $oldQty = $item->qty;
-        
-        $item->delete();
-
-        // Update purchase totals
-        $purchase = Purchase::findOrFail($purchaseId);
-        $purchase->total_amount -= $oldAmount;
-        $purchase->qty -= $oldQty;
-        $purchase->save();
-
-        return redirect()->route('purchase.items', $purchaseId)->with('success', 'Item berhasil dihapus.');
+        return redirect()->route('purchase.show', ['id' => $id])->with('success', 'Item berhasil ditambahkan.');
     }
 }

@@ -14,10 +14,12 @@
                 {{-- Action Buttons --}}
                 <div class="flex gap-x-2">
                     <x-button label="Back" href="{{ route('purchase.index') }}" />
+                    @if( Auth::user()?->isRole("finance_officer") )
                     <x-button label="View Items & Status" primary href="{{ route('purchase.items', $purchase->id) }}" />
-                </div>
+                    @endif
+                    </div>
             </div>
-
+            
             {{-- Details Grid --}}
             <div class="grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-2">
 
@@ -43,9 +45,7 @@
                 {!! DetailItem('Phone', $purchase->phone ?: '-') !!}
                 {!! DetailItem('Qty', $purchase->qty ?: '-') !!}
                 {!! DetailItem('Total Amount', 'Rp ' . number_format($purchase->total_amount ?? 0, 0, ',', '.')) !!}
-                {!! DetailItem('Total PPN', 'Rp ' . number_format($purchase->total_ppn ?? 0, 0, ',', '.')) !!}
-                {!! DetailItem('Balance', 'Rp ' . number_format($purchase->balance ?? 0, 0, ',', '.')) !!}
-
+              
                 {{-- Description / Other Info --}}
                 <div class="md:col-span-2">
                     <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</dt>

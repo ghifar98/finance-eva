@@ -207,12 +207,28 @@
         <!-- Tombol Aksi -->
         <div class="flex justify-between">
             <a href="{{ route('master-projects.index') }}" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 rounded-lg font-medium transition">
-                &larr; Kembali ke Daftar
+                
             </a>
             <a href="{{ route('master-projects.edit', $project->id) }}" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
                 Edit Proyek
             </a>
         </div>
     </div>
+         <!-- Tombol Aksi -->
+<div class="flex justify-between">
+    <a href="{{ route('master-projects.index') }}" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 rounded-lg font-medium transition">
+        &larr; Kembali ke Daftar
+    </a>
+   
+    @if($project->data_proyek)
+        <a href="{{ route('project.document.stream', $project->id) }}" target="_blank"
+           class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition">
+            Lihat Dokumen
+        </a>
+    @endif
+</div>
+            </div>
+        </div>
+
     <x-errors class="mt-4" />
 </x-layouts.app>

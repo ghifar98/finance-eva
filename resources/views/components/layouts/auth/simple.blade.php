@@ -27,7 +27,7 @@
                         <!-- Branding (optional) -->
                         <a href="{{ route('home') }}" class="flex justify-center mb-6" wire:navigate>
                             <span class="text-2xl font-bold bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent">
-                                {{ config('app.name', 'YourBrand') }}
+                               PT.INDERA SAE PRATAMA
                             </span>
                         </a>
 

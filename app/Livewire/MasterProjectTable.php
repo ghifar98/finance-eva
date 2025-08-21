@@ -81,12 +81,7 @@ final class MasterProjectTable extends PowerGridComponent
     public function columns(): array
     {
         return [
-            Column::make('ID', 'id')
-                ->headerAttribute('class', 'bg-gradient-to-r from-slate-800 to-slate-900 text-white font-bold text-center border-0'),
-            
-            Column::make('User ID', 'user_id')
-                ->headerAttribute('class', 'bg-gradient-to-r from-slate-800 to-slate-900 text-white font-bold text-center border-0'),
-            
+           
             Column::make('Nama Project', 'project_name')
                 ->sortable()
                 ->searchable()

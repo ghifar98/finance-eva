@@ -19,7 +19,6 @@
             </div>
         @endif
 
-        <!-- Project Selection Form -->
         <div class="bg-white p-6 rounded-lg shadow-sm">
             <form method="GET" action="{{ route('eva.index') }}" class="flex flex-col sm:flex-row gap-4 items-end">
                 <div class="w-full">
@@ -65,7 +64,6 @@
                 </div>
             </div>
         @else
-            <!-- Project Info (if filtered) -->
             @if(request('project_id') && $selectedProject = $projects->firstWhere('id', request('project_id')))
                 <div class="bg-white p-6 rounded-lg shadow-sm border border-blue-100">
                     <h2 class="text-xl font-semibold text-gray-900 mb-2">{{ $selectedProject->project_name }}</h2>
@@ -120,7 +118,6 @@
                             </div>
                         </div>
 
-                        <!-- Basic Metrics -->
                         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             <div class="bg-gray-50 p-3 rounded border border-gray-200">
                                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Planned Value (PV)</p>
@@ -140,13 +137,19 @@
                             </div>
                         </div>
 
-                        <!-- Variance Metrics -->
                         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             <div class="bg-gray-50 p-3 rounded border border-gray-200">
                                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Schedule Variance (SV)</p>
                                 <p class="text-lg font-semibold {{ $eva->sv >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                     Rp {{ number_format($eva->sv, 0, ',', '.') }}
                                     <span class="text-sm ml-1">({{ $eva->pv != 0 ? number_format(($eva->sv / $eva->pv) * 100, 2) : 0 }}%)</span>
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    @if($eva->sv >= 0)
+                                        ✅ Proyek berjalan lebih cepat dari jadwal.
+                                    @else
+                                        ❌ Proyek mengalami keterlambatan dari jadwal.
+                                    @endif
                                 </p>
                             </div>
                             <div class="bg-gray-50 p-3 rounded border border-gray-200">
@@ -155,11 +158,25 @@
                                     Rp {{ number_format($eva->cv, 0, ',', '.') }}
                                     <span class="text-sm ml-1">({{ $eva->ac != 0 ? number_format(($eva->cv / $eva->ac) * 100, 2) : 0 }}%)</span>
                                 </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    @if($eva->cv >= 0)
+                                        ✅ Biaya lebih rendah dari anggaran (hemat).
+                                    @else
+                                        ❌ Biaya melebihi anggaran (boros).
+                                    @endif
+                                </p>
                             </div>
                             <div class="bg-gray-50 p-3 rounded border border-gray-200">
                                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Schedule Performance Index (SPI)</p>
                                 <p class="text-lg font-semibold {{ $eva->spi >= 1 ? 'text-green-600' : 'text-red-600' }}">
                                     {{ number_format($eva->spi, 2) }}
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    @if($eva->spi >= 1)
+                                        ✅ Kinerja jadwal baik (sesuai/lebih cepat).
+                                    @else
+                                        ❌ Kinerja jadwal buruk (terlambat).
+                                    @endif
                                 </p>
                             </div>
                             <div class="bg-gray-50 p-3 rounded border border-gray-200">
@@ -167,14 +184,21 @@
                                 <p class="text-lg font-semibold {{ $eva->cpi >= 1 ? 'text-green-600' : 'text-red-600' }}">
                                     {{ number_format($eva->cpi, 2) }}
                                 </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    @if($eva->cpi >= 1)
+                                        ✅ Kinerja biaya efisien (sesuai/lebih hemat).
+                                    @else
+                                        ❌ Kinerja biaya tidak efisien (boros).
+                                    @endif
+                                </p>
                             </div>
                         </div>
 
-                        <!-- Forecast Metrics -->
                         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             <div class="bg-gray-50 p-3 rounded border border-gray-200">
                                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Estimate at Completion (EAC)</p>
                                 <p class="text-lg font-semibold text-gray-900">Rp {{ number_format($eva->eac, 0, ',', '.') }}</p>
+                                <p class="text-xs text-gray-500 mt-1">Prediksi total biaya proyek saat selesai.</p>
                             </div>
                             <div class="bg-gray-50 p-3 rounded border border-gray-200">
                                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Variance at Completion (VAC)</p>
@@ -182,16 +206,23 @@
                                     Rp {{ number_format($eva->vac, 0, ',', '.') }}
                                     <span class="text-sm ml-1">({{ $eva->bac != 0 ? number_format(($eva->vac / $eva->bac) * 100, 2) : 0 }}%)</span>
                                 </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    @if($eva->vac >= 0)
+                                        ✅ Proyek diprediksi selesai di bawah anggaran.
+                                    @else
+                                        ❌ Proyek diprediksi akan melebihi anggaran.
+                                    @endif
+                                </p>
                             </div>
                             <div class="bg-gray-50 p-3 rounded border border-gray-200">
                                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Estimate to Complete (ETC)</p>
                                 <p class="text-lg font-semibold text-gray-900">
                                     Rp {{ number_format(max($eva->eac - $eva->ac, 0), 0, ',', '.' ) }}
                                 </p>
+                                <p class="text-xs text-gray-500 mt-1">Prediksi sisa biaya untuk menyelesaikan proyek.</p>
                             </div>
                         </div>
 
-                        <!-- Notes Section with Edit Toggle -->
                         <div class="mt-4 border-t border-gray-200 pt-4">
                             <div class="flex justify-between items-center mb-3">
                                 <h4 class="text-sm font-medium text-gray-700">Catatan</h4>
@@ -205,14 +236,12 @@
                                 @endif
                             </div>
 
-                            <!-- Display Notes (Read Mode) -->
                             <div id="notes-display-{{ $eva->id }}" class="{{ empty($eva->notes) ? 'hidden' : '' }}">
                                 <div class="bg-gray-50 border border-gray-200 rounded-md p-3 min-h-[60px]">
                                     <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ $eva->notes ?: 'Belum ada catatan.' }}</p>
                                 </div>
                             </div>
 
-                            <!-- Edit Form (Edit Mode) -->
                             <form action="{{ route('eva.updateNotes', $eva->id) }}" method="POST" id="notes-form-{{ $eva->id }}" class="{{ !empty($eva->notes) ? 'hidden' : '' }}">
                                 @csrf
                                 <div class="flex flex-col gap-3">

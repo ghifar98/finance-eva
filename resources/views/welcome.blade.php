@@ -39,10 +39,7 @@
                    class="flex-1 px-6 py-3 rounded-xl bg-orange-500 text-white font-semibold text-center shadow-md hover:bg-orange-600 transition">
                    Login
                 </a>
-                <a href="{{ route('register') }}"
-                   class="flex-1 px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold text-center shadow-md hover:bg-blue-700 transition">
-                   Register
-                </a>
+                
             </div>
         </div>
 
