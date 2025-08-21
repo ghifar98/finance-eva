@@ -123,11 +123,12 @@ public function store(Request $request)
 
 
 
-    public function show(Eva $eva)
-    {
-        $eva->load(['project', 'project.progresses']);
-        return view('eva.show', compact('eva'));
-    }
+public function show(Eva $eva)
+{
+    $eva->load('project');
+    return view('eva.show', compact('eva'));
+}
+
 
 
 
