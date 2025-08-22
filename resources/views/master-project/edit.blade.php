@@ -134,10 +134,7 @@
                             <div class="mt-2 p-3 bg-blue-50 rounded-md">
                                 <p class="text-sm text-blue-800">
                                     <strong>Dokumen saat ini:</strong> 
-                                    <a href="{{ route('master-projects.download', $project->id) }}" 
-                                       class="text-blue-600 hover:text-blue-800 underline ml-1">
-                                        {{ basename($project->data_proyek) }}
-                                    </a>
+                                 
                                 </p>
                                 <p class="text-xs text-blue-600 mt-1">Upload file baru untuk mengganti dokumen yang ada</p>
                             </div>
