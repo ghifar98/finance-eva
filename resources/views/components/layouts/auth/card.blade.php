@@ -9,10 +9,10 @@
             }
         </style>
     </head>
-    <body class="min-h-screen bg-gradient-to-br from-blue-950 to-blue-900 antialiased">
+    <body class="min-h-screen">
         <!-- Decorative background elements -->
         <div class="absolute inset-0 overflow-hidden opacity-15">
-            <div class="absolute top-20 -left-20 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl"></div>
+            <div class="absolute top-20 -left-20 w-72 h-72 rounded-full"></div>
             <div class="absolute bottom-20 -right-20 w-72 h-72 rounded-full bg-blue-600/10 blur-3xl"></div>
         </div>
 

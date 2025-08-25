@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\MasterProject; // ← INI WAJIB ADA
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Eva extends Model
 {
@@ -13,20 +13,53 @@ class Eva extends Model
         'report_date',
         'progress',
         'bac',
-        'ac',
-        'ev',
         'pv',
-        'spi',
-        'cpi',
-        'notes',
+        'ev',
+        'ac',
         'sv',
         'cv',
+        'spi',
+        'cpi',
         'eac',
         'vac',
+        'notes',
+        'status',
+        'status_updated_at',
+        'status_updated_by'
     ];
 
-    public function project()
+    protected $casts = [
+        'report_date' => 'date',
+        'status_updated_at' => 'datetime'
+    ];
+
+    public function project(): BelongsTo
     {
-        return $this->belongsTo(MasterProject::class, 'project_id');
+        return $this->belongsTo(MasterProject::class);
+    }
+
+    public function statusUpdatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'status_updated_by');
+    }
+
+    public function getStatusColorAttribute()
+    {
+        return match($this->status) {
+            'approved' => 'green',
+            'rejected' => 'red',
+            'pending' => 'yellow',
+            default => 'gray'
+        };
+    }
+
+    public function getStatusTextAttribute()
+    {
+        return match($this->status) {
+            'approved' => 'Disetujui',
+            'rejected' => 'Ditolak',
+            'pending' => 'Menunggu Persetujuan',
+            default => 'Tidak Diketahui'
+        };
     }
 }

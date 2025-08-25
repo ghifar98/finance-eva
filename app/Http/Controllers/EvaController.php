@@ -11,6 +11,7 @@ use App\Models\Incomestatement;
 use App\Models\ProjectProgress;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class EvaController extends Controller
 {
@@ -238,15 +239,50 @@ private function getCodePrefix($code)
     }
     return null;
 }
-public function updateNotes(Request $request, Eva $eva)
-{
-    $request->validate([
-        'notes' => 'nullable|string|max:1000',
-    ]);
+ public function updateNotes(Request $request, Eva $eva)
+    {
+        $request->validate([
+            'notes' => 'nullable|string|max:1000',
+        ]);
 
-    $eva->notes = $request->notes;
-    $eva->save();
+        $eva->notes = $request->notes;
+        $eva->save();
 
-    return redirect()->back()->with('success', 'Catatan berhasil diperbarui.');
-}
+        return redirect()->back()->with('success', 'Catatan berhasil diperbarui.');
+    }
+
+    public function updateStatus(Request $request, Eva $eva)
+    {
+        $request->validate([
+            'status' => 'required|in:approved,rejected,pending',
+            'reason' => 'nullable|string|max:500'
+        ]);
+
+        $eva->update([
+            'status' => $request->status,
+            'status_updated_at' => now(),
+            'status_updated_by' => Auth::id()
+        ]);
+
+        // Jika ada alasan penolakan, tambahkan ke catatan
+        if ($request->status === 'rejected' && $request->reason) {
+            $currentNotes = $eva->notes ?? '';
+            $rejectionNote = "\n\n--- STATUS DITOLAK ---\n" . 
+                           "Tanggal: " . now()->format('d/m/Y H:i') . "\n" .
+                           "Oleh: " . Auth::user()->name . "\n" .
+                           "Alasan: " . $request->reason;
+            
+            $eva->update([
+                'notes' => $currentNotes . $rejectionNote
+            ]);
+        }
+
+        $statusText = match($request->status) {
+            'approved' => 'disetujui',
+            'rejected' => 'ditolak',
+            'pending' => 'dikembalikan ke status menunggu'
+        };
+
+        return redirect()->back()->with('success', "EVA berhasil {$statusText}.");
+    }
 }

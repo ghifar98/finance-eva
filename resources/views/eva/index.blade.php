@@ -89,9 +89,23 @@
                     <div class="border border-gray-200 rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition">
                         <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                             <div>
-                                <h2 class="text-lg font-semibold text-gray-900">
-                                    Minggu ke-{{ $eva->week_number }} - {{ $eva->report_date }}
-                                </h2>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h2 class="text-lg font-semibold text-gray-900">
+                                        Minggu ke-{{ $eva->week_number }} - {{ $eva->report_date }}
+                                    </h2>
+                                    <!-- Status Badge -->
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium 
+                                        {{ $eva->status === 'approved' ? 'bg-green-100 text-green-800' : 
+                                           ($eva->status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">
+                                        @if($eva->status === 'approved')
+                                            ✅ Disetujui
+                                        @elseif($eva->status === 'rejected')
+                                            ❌ Ditolak
+                                        @else
+                                            ⏳ Menunggu Persetujuan
+                                        @endif
+                                    </span>
+                                </div>
                                 <div class="flex flex-wrap items-center gap-2 mt-2">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                                         {{ $eva->project->project_name ?? 'Proyek Tidak Dikenali' }}
@@ -106,10 +120,18 @@
                                         CPI: {{ number_format($eva->cpi, 2) }}
                                     </span>
                                 </div>
+                                
+                                <!-- Status Info -->
+                                @if($eva->status_updated_at && $eva->statusUpdatedBy)
+                                    <div class="mt-2 text-xs text-gray-500">
+                                        Status diperbarui oleh <strong>{{ $eva->statusUpdatedBy->name }}</strong> 
+                                        pada {{ $eva->status_updated_at->format('d/m/Y H:i') }}
+                                    </div>
+                                @endif
                             </div>
-                           
                         </div>
 
+                        <!-- EVA Metrics Cards -->
                         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             <div class="bg-gray-50 p-3 rounded border border-gray-200">
                                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Planned Value (PV)</p>
@@ -129,6 +151,7 @@
                             </div>
                         </div>
 
+                        <!-- Variance and Index Metrics -->
                         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             <div class="bg-gray-50 p-3 rounded border border-gray-200">
                                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Schedule Variance (SV)</p>
@@ -186,6 +209,7 @@
                             </div>
                         </div>
 
+                        <!-- Additional Metrics -->
                         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             <div class="bg-gray-50 p-3 rounded border border-gray-200">
                                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Estimate at Completion (EAC)</p>
@@ -214,27 +238,63 @@
                                 <p class="text-xs text-gray-500 mt-1">Prediksi sisa biaya untuk menyelesaikan proyek.</p>
                             </div>
                         </div>
-                        @if( Auth::user()?->isRole("project_director") )
+
+                        <!-- Notes and Status Management Section -->
                         <div class="mt-4 border-t border-gray-200 pt-4">
                             <div class="flex justify-between items-center mb-3">
-                                <h4 class="text-sm font-medium text-gray-700">Catatan</h4>
-                                @if(!empty($eva->notes))
-                                    <button onclick="toggleEdit({{ $eva->id }})" id="edit-btn-{{ $eva->id }}" class="text-sm text-blue-600 hover:text-blue-800 transition flex items-center gap-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                        Edit
-                                    </button>
-                                @endif
+                                <h4 class="text-sm font-medium text-gray-700">Catatan & Status</h4>
+                                <div class="flex gap-2">
+                                    <!-- Status Update Buttons (hanya untuk project director) -->
+                                    @if(Auth::user()?->isRole("project_director"))
+                                        <div class="flex gap-1">
+                                            @if($eva->status !== 'approved')
+                                                <button onclick="updateStatus({{ $eva->id }}, 'approved')" class="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition flex items-center gap-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    Setujui
+                                                </button>
+                                            @endif
+                                            @if($eva->status !== 'rejected')
+                                                <button onclick="showRejectModal({{ $eva->id }})" class="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition flex items-center gap-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                    Tolak
+                                                </button>
+                                            @endif
+                                            @if($eva->status !== 'pending')
+                                                <button onclick="updateStatus({{ $eva->id }}, 'pending')" class="text-xs px-2 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition flex items-center gap-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Pending
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @endif
+                                    <!-- Edit Notes Button -->
+                                    @if(Auth::user()?->isRole("project_director"))
+                                    @if(!empty($eva->notes))
+                                        <button onclick="toggleEdit({{ $eva->id }})" id="edit-btn-{{ $eva->id }}" class="text-sm text-blue-600 hover:text-blue-800 transition flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            Edit
+                                        </button>
+                                    @endif
+                                    @endif
+                                </div>
                             </div>
-                            @endif
 
+                            <!-- Notes Display -->
                             <div id="notes-display-{{ $eva->id }}" class="{{ empty($eva->notes) ? 'hidden' : '' }}">
                                 <div class="bg-gray-50 border border-gray-200 rounded-md p-3 min-h-[60px]">
                                     <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ $eva->notes ?: 'Belum ada catatan.' }}</p>
                                 </div>
                             </div>
 
+                            <!-- Notes Form -->
                             <form action="{{ route('eva.updateNotes', $eva->id) }}" method="POST" id="notes-form-{{ $eva->id }}" class="{{ !empty($eva->notes) ? 'hidden' : '' }}">
                                 @csrf
                                 <div class="flex flex-col gap-3">
@@ -270,20 +330,46 @@
         @endif
     </div>
 
+    <!-- Modal untuk Penolakan -->
+    <div id="rejectModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Tolak EVA</h3>
+            <form id="rejectForm" method="POST">
+                @csrf
+                <div class="mb-4">
+                    <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">Alasan Penolakan</label>
+                    <textarea 
+                        name="reason" 
+                        id="reason" 
+                        rows="3" 
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 text-sm" 
+                        placeholder="Jelaskan alasan penolakan EVA ini..."
+                        required
+                    ></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeRejectModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
+                        Tolak EVA
+                    </button>
+                </div>
+                <input type="hidden" name="status" value="rejected">
+            </form>
+        </div>
+    </div>
+
     <script>
+        // Existing functions
         function toggleEdit(evaId) {
             const displayDiv = document.getElementById(`notes-display-${evaId}`);
             const formDiv = document.getElementById(`notes-form-${evaId}`);
             const editBtn = document.getElementById(`edit-btn-${evaId}`);
             
-            // Hide display, show form
             displayDiv.classList.add('hidden');
             formDiv.classList.remove('hidden');
-            
-            // Focus on textarea
             document.getElementById(`notes-input-${evaId}`).focus();
-            
-            // Hide edit button
             editBtn.classList.add('hidden');
         }
 
@@ -293,22 +379,78 @@
             const editBtn = document.getElementById(`edit-btn-${evaId}`);
             const textarea = document.getElementById(`notes-input-${evaId}`);
             
-            // Reset textarea value to original
             const originalNotes = displayDiv.querySelector('p').textContent;
             textarea.value = originalNotes === 'Belum ada catatan.' ? '' : originalNotes;
             
-            // Show display, hide form
             displayDiv.classList.remove('hidden');
             formDiv.classList.add('hidden');
-            
-            // Show edit button
             editBtn.classList.remove('hidden');
         }
 
-        // Auto-hide form after successful submission (if using session flash)
+        // New functions for status management
+        function updateStatus(evaId, status) {
+            if (confirm(`Apakah Anda yakin ingin mengubah status EVA ini menjadi ${getStatusText(status)}?`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/eva/${evaId}/status`;
+                
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                form.innerHTML = `
+                    <input type="hidden" name="_token" value="${csrfToken}">
+                    <input type="hidden" name="status" value="${status}">
+                `;
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function showRejectModal(evaId) {
+            const modal = document.getElementById('rejectModal');
+            const form = document.getElementById('rejectForm');
+            
+            form.action = `/eva/${evaId}/status`;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Focus on reason textarea
+            document.getElementById('reason').focus();
+        }
+
+        function closeRejectModal() {
+            const modal = document.getElementById('rejectModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            
+            // Clear the form
+            document.getElementById('reason').value = '';
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'approved': return 'disetujui';
+                case 'rejected': return 'ditolak';
+                case 'pending': return 'menunggu persetujuan';
+                default: return 'tidak diketahui';
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('rejectModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeRejectModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeRejectModal();
+            }
+        });
+
         @if(session('success'))
             document.addEventListener('DOMContentLoaded', function() {
-                // Find the EVA that was just updated and switch to display mode
                 const forms = document.querySelectorAll('[id^="notes-form-"]');
                 forms.forEach(form => {
                     const evaId = form.id.split('-')[2];
@@ -324,4 +466,9 @@
             });
         @endif
     </script>
+
+    <!-- Add CSRF token meta tag if not already present -->
+    @push('head')
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+    @endpush
 </x-layouts.app>

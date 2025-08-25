@@ -100,13 +100,17 @@ Route::prefix('purchase')->name('purchase.')->group(function () {
     Route::get('incomestatement', [IncomeStatementController::class, 'index'])->name('incomestatement.index');
 
     // EVA
-   Route::prefix('eva')->name('eva.')->group(function () {
+ Route::prefix('eva')->name('eva.')->group(function () {
     Route::get('/', [EvaController::class, 'index'])->name('index');
     Route::get('/create', [EvaController::class, 'create'])->name('create');
     Route::post('/store', [EvaController::class, 'store'])->name('store');
-    Route::get('/{project_id}', [EvaController::class, 'show'])->name('show');
-   Route::post('/{eva}/notes', [EvaController::class, 'updateNotes'])->name('updateNotes');
-
+    Route::get('/{eva}', [EvaController::class, 'show'])->name('show');
+    Route::post('/{eva}/notes', [EvaController::class, 'updateNotes'])->name('updateNotes');
+    
+    // Perbaikan route untuk update status - hapus duplikasi dan perbaiki penamaan
+    Route::post('/{eva}/status', [EvaController::class, 'updateStatus'])
+        ->name('updateStatus')
+        ->middleware('auth');
 });
 
 

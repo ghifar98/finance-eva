@@ -9,7 +9,7 @@
             }
         </style>
     </head>
-    <body class="min-h-screen antialiased bg-gradient-to-br from-blue-950 to-blue-900">
+    <body class="min-h-screen antialiased bg-gradient-to-br from-blue-100 to-blue-200">
         <!-- Animated background elements -->
         <div class="absolute inset-0 overflow-hidden opacity-10">
             <div class="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-orange-500/20 blur-3xl"></div>
