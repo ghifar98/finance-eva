@@ -28,7 +28,15 @@ class IncomeStatementController extends Controller
             $query->whereBetween('date', [$startDate, $endDate]);
         }
 
-        $projects = MasterProject::select('id', 'project_name')->get();
+        // Update this line to include start_project and end_project
+        $projects = MasterProject::select('id', 'project_name', 'start_project', 'end_project')->get();
+        
+        // Get selected project details
+        $selectedProject = null;
+        if ($projectIdSelected) {
+            $selectedProject = MasterProject::select('id', 'project_name', 'start_project', 'end_project')
+                ->find($projectIdSelected);
+        }
 
         $amount = 0;
         if ($startDate && $endDate && $projectIdSelected) {
@@ -184,40 +192,37 @@ class IncomeStatementController extends Controller
                 'formatted' => 'Rp ' . number_format($total, 0, ',', '.'),
             ];
         });
-        // dd($summary);
-       if ($startDate && $endDate && $projectIdSelected) {
-    // Gross Profit
-    $grossProfit = $summary->where('code', '40000')->sum('total_nominal') 
-                 - $summary->where('code', '50000')->sum('total_nominal');
 
-    // Operating Income
-    $operatingIncome = $grossProfit - $summary->where('code', '60000')->sum('total_nominal');
+        if ($startDate && $endDate && $projectIdSelected) {
+            // Gross Profit
+            $grossProfit = $summary->where('code', '40000')->sum('total_nominal') 
+                         - $summary->where('code', '50000')->sum('total_nominal');
 
-    // Income Before Tax
-    $incomeBeforeTax = $operatingIncome - $summary->where('code', '70000')->sum('total_nominal');
+            // Operating Income
+            $operatingIncome = $grossProfit - $summary->where('code', '60000')->sum('total_nominal');
 
-    // Other Income Balance
-    $otherIncomeBalance = $incomeBeforeTax - $summary->where('code', '80000')->sum('total_nominal');
+            // Income Before Tax
+            $incomeBeforeTax = $operatingIncome - $summary->where('code', '70000')->sum('total_nominal');
 
-    // Simpan hasil dalam array jika ingin dikirim ke view
-    $calculatedTotals = [
-        'gross_profit' => 'Rp ' . number_format($grossProfit, 0, ',', '.'),
-        'operating_income' => 'Rp ' . number_format($operatingIncome, 0, ',', '.'),
-        'income_before_tax' => 'Rp ' . number_format($incomeBeforeTax, 0, ',', '.'),
-        'other_income_balance' => 'Rp ' . number_format($otherIncomeBalance, 0, ',', '.'),
-    ];
-} else {
-    // Default jika belum ada filter
-    $calculatedTotals = [
-        'gross_profit' => 'Rp 0',
-        'operating_income' => 'Rp 0',
-        'income_before_tax' => 'Rp 0',
-        'other_income_balance' => 'Rp 0',
-    ];
-}
+            // Other Income Balance
+            $otherIncomeBalance = $incomeBeforeTax - $summary->where('code', '80000')->sum('total_nominal');
 
-
-        // dd($summary,$grossprofit);
+            // Simpan hasil dalam array jika ingin dikirim ke view
+            $calculatedTotals = [
+                'gross_profit' => 'Rp ' . number_format($grossProfit, 0, ',', '.'),
+                'operating_income' => 'Rp ' . number_format($operatingIncome, 0, ',', '.'),
+                'income_before_tax' => 'Rp ' . number_format($incomeBeforeTax, 0, ',', '.'),
+                'other_income_balance' => 'Rp ' . number_format($otherIncomeBalance, 0, ',', '.'),
+            ];
+        } else {
+            // Default jika belum ada filter
+            $calculatedTotals = [
+                'gross_profit' => 'Rp 0',
+                'operating_income' => 'Rp 0',
+                'income_before_tax' => 'Rp 0',
+                'other_income_balance' => 'Rp 0',
+            ];
+        }
 
         return view('incomestatement.index', compact(
             'startDate',
@@ -225,11 +230,10 @@ class IncomeStatementController extends Controller
             'amount',
             'projects',
             'projectIdSelected',
+            'selectedProject',  // Add this new variable
             'grouped',
             'summary',
             'calculatedTotals'
-
-
         ));
     }
 }

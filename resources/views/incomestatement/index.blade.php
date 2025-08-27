@@ -20,52 +20,90 @@
                     </div>
                     
                     <!-- Filter Section -->
-                    <div class="flex-1 max-w-3xl">
-                     <form action="{{ route('incomestatement.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="col-span-1">
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
-                            <input 
-                                type="date" 
-                                name="start_date" 
-                                value="{{ request('start_date') }}"
-                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        
-                        <div class="col-span-1">
-                            <label class="block text-sm font-medium text-slate-700 mb-2">End Date</label>
-                            <input 
-                                type="date" 
-                                name="end_date" 
-                                value="{{ request('end_date') }}"
-                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        
-                        <div class="col-span-1">
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Project</label>
-                            <select 
-                                name="project_id" 
-                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="">Select Project</option>
-                                @foreach($projects as $project)
-                                    <option value="{{ $project->id }}" {{ request('project_id') == $project->id ? 'selected' : '' }}>
-                                        {{ $project->project_name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        
-                        <div class="col-span-1 flex items-end gap-2">
-                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                                Apply
-                            </button>
-                            <a href="{{ route('incomestatement.index') }}" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-center transition-colors">
-                                Reset
-                            </a>
-                        </div>
-                    </form>
+                    <div class="flex-1 max-w-4xl">
+                        <form action="{{ route('incomestatement.index') }}" method="GET" class="space-y-4">
+                            <!-- First Row: Date Inputs and Project Selection -->
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
+                                    <input 
+                                        type="date" 
+                                        name="start_date" 
+                                        value="{{ request('start_date') }}"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">End Date</label>
+                                    <input 
+                                        type="date" 
+                                        name="end_date" 
+                                        value="{{ request('end_date') }}"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Project</label>
+                                    <select 
+                                        name="project_id" 
+                                        id="project_select"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        onchange="updateProjectDates()"
+                                    >
+                                        <option value="">Select Project</option>
+                                        @foreach($projects as $project)
+                                            <option 
+                                                value="{{ $project->id }}" 
+                                                data-start-date="{{ $project->start_project ? \Carbon\Carbon::parse($project->start_project)->format('d M Y') : 'Not set' }}" 
+                                                data-end-date="{{ $project->end_project ? \Carbon\Carbon::parse($project->end_project)->format('d M Y') : 'Not set' }}"
+                                                {{ request('project_id') == $project->id ? 'selected' : '' }}
+                                            >
+                                                {{ $project->project_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                
+                                <div class="col-span-1 flex items-end gap-2">
+                                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                        Apply
+                                    </button>
+                                    <a href="{{ route('incomestatement.index') }}" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-center transition-colors">
+                                        Reset
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Second Row: Project Dates Display -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="project-dates-container" 
+                                 style="{{ $selectedProject ? 'display: grid;' : 'display: none;' }}">
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        <span class="text-sm font-medium text-blue-700">Project Start Date</span>
+                                    </div>
+                                    <div class="mt-1 text-blue-900 font-semibold" id="project-start-date">
+                                        {{ $selectedProject ? ($selectedProject->start_project ? \Carbon\Carbon::parse($selectedProject->start_project)->format('d M Y') : 'Not set') : '' }}
+                                    </div>
+                                </div>
+
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span class="text-sm font-medium text-green-700">Project End Date</span>
+                                    </div>
+                                    <div class="mt-1 text-green-900 font-semibold" id="project-end-date">
+                                        {{ $selectedProject ? ($selectedProject->end_project ? \Carbon\Carbon::parse($selectedProject->end_project)->format('d M Y') : 'Not set') : '' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -155,4 +193,30 @@
             @endif
         </div>
     </div>
-</x-layouts.app>    
+
+    <script>
+        function updateProjectDates() {
+            const select = document.getElementById('project_select');
+            const container = document.getElementById('project-dates-container');
+            const startDateElement = document.getElementById('project-start-date');
+            const endDateElement = document.getElementById('project-end-date');
+            
+            if (select.value) {
+                const selectedOption = select.options[select.selectedIndex];
+                const startDate = selectedOption.getAttribute('data-start-date');
+                const endDate = selectedOption.getAttribute('data-end-date');
+                
+                startDateElement.textContent = startDate;
+                endDateElement.textContent = endDate;
+                container.style.display = 'grid';
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProjectDates();
+        });
+    </script>
+</x-layouts.app>

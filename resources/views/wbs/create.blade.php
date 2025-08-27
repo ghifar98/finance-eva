@@ -20,14 +20,22 @@
 
             <div id="wbsItemsContainer">
                 <div class="wbs-item mb-6 border rounded p-4 bg-gray-50">
-                    <div class="mb-3">
-                        <label class="block font-medium mb-1">Minggu</label>
-                        <input type="text" name="items[0][minggu]" class="w-full border px-3 py-2 rounded" required>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="mb-3">
+                            <label class="block font-medium mb-1">Minggu</label>
+                            <input type="text" name="items[0][minggu]" class="w-full border px-3 py-2 rounded" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="block font-medium mb-1">Kode</label>
+                            <input type="text" name="items[0][kode]" class="w-full border px-3 py-2 rounded" required>
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="block font-medium mb-1">Kode</label>
-                        <input type="text" name="items[0][kode]" class="w-full border px-3 py-2 rounded" required>
+                        <label class="block font-medium mb-1">Rencana Persentase Progres (%)</label>
+                        <input type="number" name="items[0][rencana_progres]" class="w-full border px-3 py-2 rounded" min="0" max="100" step="0.01" placeholder="Contoh: 3.98" required>
+                        <small class="text-gray-500">Masukkan nilai antara 0-100 (contoh: 3.98, 15.25, 50.00)</small>
                     </div>
 
                     <div class="mb-3">
@@ -53,14 +61,22 @@
             const container = document.getElementById('wbsItemsContainer');
             const html = `
                 <div class="wbs-item mb-6 border rounded p-4 bg-gray-50">
-                    <div class="mb-3">
-                        <label class="block font-medium mb-1">Minggu</label>
-                        <input type="text" name="items[${itemIndex}][minggu]" class="w-full border px-3 py-2 rounded" required>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="mb-3">
+                            <label class="block font-medium mb-1">Minggu</label>
+                            <input type="text" name="items[${itemIndex}][minggu]" class="w-full border px-3 py-2 rounded" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="block font-medium mb-1">Kode</label>
+                            <input type="text" name="items[${itemIndex}][kode]" class="w-full border px-3 py-2 rounded" required>
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="block font-medium mb-1">Kode</label>
-                        <input type="text" name="items[${itemIndex}][kode]" class="w-full border px-3 py-2 rounded" required>
+                        <label class="block font-medium mb-1">Rencana Persentase Progres (%)</label>
+                        <input type="number" name="items[${itemIndex}][rencana_progres]" class="w-full border px-3 py-2 rounded" min="0" max="100" step="0.01" placeholder="Contoh: 3.98" required>
+                        <small class="text-gray-500">Masukkan nilai antara 0-100 (contoh: 3.98, 15.25, 50.00)</small>
                     </div>
 
                     <div class="mb-3">

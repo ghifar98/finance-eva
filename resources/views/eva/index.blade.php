@@ -239,6 +239,152 @@
                             </div>
                         </div>
 
+                        <!-- Kesimpulan EVA -->
+                        <div class="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-lg border border-blue-200">
+                            <h4 class="text-lg font-bold mb-4 flex items-center gap-2">
+                                <span class="text-2xl">📊</span>
+                                Kesimpulan Analisis EVA Minggu ke-{{ $eva->week_number }}
+                            </h4>
+                            
+                            @php
+                                // Hitung total AC kumulatif sampai minggu ini
+                                $totalAcKumulatif = DB::table('evas')
+                                    ->where('project_id', $eva->project_id)
+                                    ->where('week_number', '<=', $eva->week_number)
+                                    ->sum('ac');
+                                
+                                // Hitung sisa budget yang tersedia (BAC - Total AC yang sudah dikeluarkan)
+                                $sisaBudget = $eva->bac - $totalAcKumulatif;
+                                
+                                // Hitung ETC
+                                $etc = max($eva->eac - $eva->ac, 0);
+                                
+                                // Tentukan status berdasarkan kondisi aktual
+                                $overBudgetAmount = $eva->eac - $eva->bac; // Jika positif, akan over budget
+                                $isOverBudget = $overBudgetAmount > 0;
+                                $isOnTrack = $eva->vac >= 0 && $etc <= ($eva->bac * 0.8); // VAC positif dan ETC wajar
+                                $isDelayed = $eva->spi < 0.9;
+                                $isOverCost = $eva->vac < 0; // VAC negatif menandakan over budget
+                                
+                                $performanceIcon = '';
+                                $performanceClass = '';
+                                $kesimpulan = '';
+                                
+                                if ($isOverBudget && $isDelayed) {
+                                    $performanceIcon = '🚨';
+                                    $performanceClass = 'text-red-700 bg-red-100';
+                                    $kesimpulan = "Tanda-tanda menunjukkan masalah yang besar! Proyek akan mengalami over budget sebesar Rp " . number_format($overBudgetAmount, 0, ',', '.') . " dari anggaran awal (VAC: Rp " . number_format($eva->vac, 0, ',', '.') . "). Proyek juga mengalami keterlambatan jadwal yang signifikan dengan SPI " . number_format($eva->spi, 2) . ". Budget yang tersisa untuk melanjutkan project sebesar Rp " . number_format(max($sisaBudget, 0), 0, ',', '.') . ", sementara estimasi biaya penyelesaian (ETC) adalah Rp " . number_format($etc, 0, ',', '.') . ".";
+                                } elseif ($isOverBudget || $eva->vac < 0) {
+                                    $performanceIcon = '⚠️';
+                                    $performanceClass = 'text-red-700 bg-red-100';
+                                    if ($eva->vac < 0) {
+                                        $kesimpulan = "Proyeksi menunjukkan proyek akan mengalami over budget. VAC menunjukkan defisit sebesar Rp " . number_format(abs($eva->vac), 0, ',', '.') . " dari anggaran yang ditetapkan (BAC: Rp " . number_format($eva->bac, 0, ',', '.') . "). Budget yang tersisa untuk melanjutkan project sebesar Rp " . number_format(max($sisaBudget, 0), 0, ',', '.') . ", namun estimasi biaya penyelesaian (ETC) mencapai Rp " . number_format($etc, 0, ',', '.') . ". Diperlukan tindakan pengendalian biaya segera.";
+                                    } else {
+                                        $kesimpulan = "Proyeksi menunjukkan proyek akan mengalami over budget sebesar Rp " . number_format($overBudgetAmount, 0, ',', '.') . " dari anggaran yang ditetapkan (BAC: Rp " . number_format($eva->bac, 0, ',', '.') . "). Budget yang tersisa untuk melanjutkan project sebesar Rp " . number_format(max($sisaBudget, 0), 0, ',', '.') . ", sementara estimasi biaya penyelesaian (ETC) adalah Rp " . number_format($etc, 0, ',', '.') . ". Diperlukan tindakan pengendalian biaya segera.";
+                                    }
+                                } elseif ($isDelayed && $etc > ($eva->bac * 0.5)) {
+                                    $performanceIcon = '⚠️';
+                                    $performanceClass = 'text-yellow-700 bg-yellow-100';
+                                    $kesimpulan = "Proyek mengalami keterlambatan jadwal (SPI: " . number_format($eva->spi, 2) . ") dengan estimasi biaya penyelesaian (ETC) yang cukup tinggi sebesar Rp " . number_format($etc, 0, ',', '.') . ". VAC saat ini menunjukkan " . ($eva->vac >= 0 ? "surplus sebesar Rp " . number_format($eva->vac, 0, ',', '.') : "defisit sebesar Rp " . number_format(abs($eva->vac), 0, ',', '.')) . ". Budget yang tersisa untuk melanjutkan project sebesar Rp " . number_format(max($sisaBudget, 0), 0, ',', '.') . ". Diperlukan evaluasi strategi pelaksanaan.";
+                                } elseif ($isDelayed) {
+                                    $performanceIcon = '⏰';
+                                    $performanceClass = 'text-yellow-700 bg-yellow-100';
+                                    $kesimpulan = "Proyek mengalami keterlambatan jadwal dengan SPI " . number_format($eva->spi, 2) . ", namun kondisi biaya masih terkendali dengan VAC sebesar Rp " . number_format($eva->vac, 0, ',', '.') . ". Budget yang tersisa untuk melanjutkan project sebesar Rp " . number_format(max($sisaBudget, 0), 0, ',', '.') . " dengan estimasi biaya penyelesaian (ETC) sebesar Rp " . number_format($etc, 0, ',', '.') . ". Fokus pada percepatan jadwal dengan tetap mempertahankan efisiensi biaya.";
+                                } elseif ($etc > ($eva->bac * 0.6)) {
+                                    $performanceIcon = '💰';
+                                    $performanceClass = 'text-yellow-700 bg-yellow-100';
+                                    $kesimpulan = "Proyek menunjukkan estimasi biaya penyelesaian (ETC) yang tinggi sebesar Rp " . number_format($etc, 0, ',', '.') . ", namun jadwal masih relatif on track. VAC menunjukkan " . ($eva->vac >= 0 ? "surplus sebesar Rp " . number_format($eva->vac, 0, ',', '.') : "defisit sebesar Rp " . number_format(abs($eva->vac), 0, ',', '.')) . ". Budget yang tersisa untuk melanjutkan project sebesar Rp " . number_format(max($sisaBudget, 0), 0, ',', '.') . ". Diperlukan pengendalian biaya yang lebih ketat.";
+                                } elseif ($isOnTrack) {
+                                    $performanceIcon = '🎉';
+                                    $performanceClass = 'text-green-700 bg-green-100';
+                                    $kesimpulan = "Proyek berjalan sangat baik! VAC menunjukkan surplus sebesar Rp " . number_format($eva->vac, 0, ',', '.') . " yang menandakan proyek akan selesai di bawah anggaran. Budget yang tersisa untuk melanjutkan project sebesar Rp " . number_format(max($sisaBudget, 0), 0, ',', '.') . " dengan estimasi biaya penyelesaian (ETC) yang efisien sebesar Rp " . number_format($etc, 0, ',', '.') . ". Proyeksi menunjukkan pengelolaan yang sangat baik.";
+                                } else {
+                                    $performanceIcon = '👍';
+                                    $performanceClass = 'text-blue-700 bg-blue-100';
+                                    $kesimpulan = "Proyek dalam kondisi yang dapat diterima dengan VAC sebesar Rp " . number_format($eva->vac, 0, ',', '.') . ". Budget yang tersisa untuk melanjutkan project sebesar Rp " . number_format(max($sisaBudget, 0), 0, ',', '.') . " dengan estimasi biaya penyelesaian (ETC) sebesar Rp " . number_format($etc, 0, ',', '.') . ". Monitoring berkelanjutan diperlukan untuk memastikan proyek tetap pada jalur yang benar.";
+                                }
+                            @endphp
+
+                            <div class="mb-4">
+                                <div class="flex items-center mb-3">
+                                    <span class="text-3xl mr-3">{{ $performanceIcon }}</span>
+                                    <div class="px-4 py-2 rounded-lg {{ $performanceClass }}">
+                                        <h5 class="text-lg font-semibold">
+                                            Analisis Kinerja Proyek
+                                        </h5>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white p-4 rounded-md border-l-4 border-blue-400 mb-4">
+                                    <p class="text-gray-800 text-sm leading-relaxed">{{ $kesimpulan }}</p>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                    <div class="bg-white p-4 rounded-lg shadow-sm">
+                                        <h6 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                            <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                            Ringkasan Finansial
+                                        </h6>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                <span class="font-medium text-xs">Budget Awal (BAC):</span>
+                                                <span class="text-sm font-semibold">Rp {{ number_format($eva->bac, 0, ',', '.') }}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                <span class="font-medium text-xs">Total Biaya s/d Minggu {{ $eva->week_number }}:</span>
+                                                <span class="text-sm font-semibold">Rp {{ number_format($totalAcKumulatif, 0, ',', '.') }}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                <span class="font-medium text-xs">Sisa Budget:</span>
+                                                <span class="px-2 py-1 rounded text-white text-xs font-medium {{ $sisaBudget >= 0 ? 'bg-green-500' : 'bg-red-500' }}">
+                                                    Rp {{ number_format(max($sisaBudget, 0), 0, ',', '.') }}
+                                                </span>
+                                            </div>
+                                            @if($isOverBudget)
+                                                <div class="flex justify-between items-center p-2 bg-red-50 rounded border border-red-200">
+                                                    <span class="font-medium text-xs text-red-700">Proyeksi Over Budget:</span>
+                                                    <span class="px-2 py-1 rounded bg-red-500 text-white text-xs font-medium">
+                                                        Rp {{ number_format($overBudgetAmount, 0, ',', '.') }}
+                                                    </span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white p-4 rounded-lg shadow-sm">
+                                        <h6 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            Indikator Performa
+                                        </h6>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                <span class="font-medium text-xs">Progress Fisik:</span>
+                                                <span class="px-2 py-1 rounded text-white text-xs font-medium {{ $eva->progress >= 70 ? 'bg-green-500' : ($eva->progress >= 40 ? 'bg-yellow-500' : 'bg-red-500') }}">
+                                                    {{ $eva->progress }}%
+                                                </span>
+                                            </div>
+                                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                <span class="font-medium text-xs">Variance at Completion (VAC):</span>
+                                                <span class="px-2 py-1 rounded text-white text-xs font-medium {{ $eva->vac >= 0 ? 'bg-green-500' : 'bg-red-500' }}">
+                                                    Rp {{ number_format($eva->vac, 0, ',', '.') }}
+                                                </span>
+                                            </div>
+                                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                <span class="font-medium text-xs">Estimate to Complete (ETC):</span>
+                                                <span class="px-2 py-1 rounded text-white text-xs font-medium {{ $etc <= ($eva->bac * 0.5) ? 'bg-green-500' : ($etc <= ($eva->bac * 0.7) ? 'bg-yellow-500' : 'bg-red-500') }}">
+                                                    Rp {{ number_format($etc, 0, ',', '.') }}
+                                                </span>
+                                            </div>
+                                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                <span class="font-medium text-xs">Estimasi Total Biaya (EAC):</span>
+                                                <span class="text-sm font-semibold">Rp {{ number_format($eva->eac, 0, ',', '.') }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Notes and Status Management Section -->
                         <div class="mt-4 border-t border-gray-200 pt-4">
                             <div class="flex justify-between items-center mb-3">
@@ -324,6 +470,27 @@
                                 </div>
                             </form>
                         </div>
+
+                        <!-- Continue Work Button Section -->
+                        <div class="mt-6 pt-4 border-t border-gray-200">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div>
+                                    <h5 class="text-sm font-medium text-gray-700 mb-1">Tindakan Lanjutan</h5>
+                                    <p class="text-xs text-gray-500">Berdasarkan analisis EVA, tentukan langkah selanjutnya untuk proyek ini.</p>
+                                </div>
+                                
+                                <button 
+                                    id="continueWorkBtn-{{ $eva->id }}"
+                                    class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors duration-200 shadow-sm"
+                                    onclick="continueWork({{ $eva->id }})"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span id="btnText-{{ $eva->id }}">Lanjutkan Pekerjaan</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 @endforeach
             </div>
@@ -360,112 +527,270 @@
         </div>
     </div>
 
-    <script>
-        // Existing functions
-        function toggleEdit(evaId) {
+   <script>
+// Existing functions
+function toggleEdit(evaId) {
+    const displayDiv = document.getElementById(`notes-display-${evaId}`);
+    const formDiv = document.getElementById(`notes-form-${evaId}`);
+    const editBtn = document.getElementById(`edit-btn-${evaId}`);
+    
+    displayDiv.classList.add('hidden');
+    formDiv.classList.remove('hidden');
+    document.getElementById(`notes-input-${evaId}`).focus();
+    editBtn.classList.add('hidden');
+}
+
+function cancelEdit(evaId) {
+    const displayDiv = document.getElementById(`notes-display-${evaId}`);
+    const formDiv = document.getElementById(`notes-form-${evaId}`);
+    const editBtn = document.getElementById(`edit-btn-${evaId}`);
+    const textarea = document.getElementById(`notes-input-${evaId}`);
+    
+    const originalNotes = displayDiv.querySelector('p').textContent;
+    textarea.value = originalNotes === 'Belum ada catatan.' ? '' : originalNotes;
+    
+    displayDiv.classList.remove('hidden');
+    formDiv.classList.add('hidden');
+    editBtn.classList.remove('hidden');
+}
+
+// New functions for status management
+function updateStatus(evaId, status) {
+    if (confirm(`Apakah Anda yakin ingin mengubah status EVA ini menjadi ${getStatusText(status)}?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/eva/${evaId}/status`;
+        
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        form.innerHTML = `
+            <input type="hidden" name="_token" value="${csrfToken}">
+            <input type="hidden" name="status" value="${status}">
+        `;
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function showRejectModal(evaId) {
+    const modal = document.getElementById('rejectModal');
+    const form = document.getElementById('rejectForm');
+    
+    form.action = `/eva/${evaId}/status`;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Focus on reason textarea
+    document.getElementById('reason').focus();
+}
+
+function closeRejectModal() {
+    const modal = document.getElementById('rejectModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    
+    // Clear the form
+    document.getElementById('reason').value = '';
+}
+
+function getStatusText(status) {
+    switch(status) {
+        case 'approved': return 'disetujui';
+        case 'rejected': return 'ditolak';
+        case 'pending': return 'menunggu persetujuan';
+        default: return 'tidak diketahui';
+    }
+}
+
+// === NEW ENHANCED CONTINUE WORK FUNCTIONS ===
+
+// Fungsi untuk menyimpan status di localStorage
+function saveWorkStatus(evaId, status) {
+    const workStatuses = JSON.parse(localStorage.getItem('evaWorkStatuses') || '{}');
+    workStatuses[evaId] = {
+        status: status,
+        timestamp: new Date().toISOString(),
+        user: '{{ Auth::user()->name ?? "Unknown" }}'
+    };
+    localStorage.setItem('evaWorkStatuses', JSON.stringify(workStatuses));
+}
+
+// Fungsi untuk mengambil status dari localStorage
+function getWorkStatus(evaId) {
+    const workStatuses = JSON.parse(localStorage.getItem('evaWorkStatuses') || '{}');
+    return workStatuses[evaId] || null;
+}
+
+// Enhanced Continue Work Function
+function continueWork(evaId) {
+    const btn = document.getElementById(`continueWorkBtn-${evaId}`);
+    const btnText = document.getElementById(`btnText-${evaId}`);
+    
+    // Cek apakah sudah pernah diklik sebelumnya
+    const existingStatus = getWorkStatus(evaId);
+    if (existingStatus && existingStatus.status === 'continued') {
+        return;
+    }
+    
+    // Konfirmasi dari user
+    if (!confirm('Apakah Anda yakin ingin melanjutkan pekerjaan untuk EVA ini?')) {
+        return;
+    }
+    
+    // Disable tombol dan ubah tampilan
+    btn.disabled = true;
+    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+    btn.classList.add('bg-blue-600', 'cursor-not-allowed');
+    btnText.textContent = 'Pekerjaan Dilanjutkan';
+    
+    // Ubah icon menjadi checkmark
+    const icon = btn.querySelector('svg');
+    icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />`;
+    
+    // Simpan status ke localStorage
+    saveWorkStatus(evaId, 'continued');
+    
+    // Tampilkan notifikasi
+    showNotification('Status proyek berhasil diubah menjadi "Pekerjaan Dilanjutkan"', 'success');
+    
+    // Tambahkan informasi waktu
+    addWorkContinuedInfo(evaId);
+}
+
+// Fungsi untuk menambahkan informasi waktu
+function addWorkContinuedInfo(evaId) {
+    const btn = document.getElementById(`continueWorkBtn-${evaId}`);
+    const workStatus = getWorkStatus(evaId);
+    
+    if (!workStatus) return;
+    
+    // Hapus info lama jika ada
+    const existingInfo = document.getElementById(`workInfo-${evaId}`);
+    if (existingInfo) {
+        existingInfo.remove();
+    }
+    
+    // Buat elemen info baru
+    const infoDiv = document.createElement('div');
+    infoDiv.id = `workInfo-${evaId}`;
+    infoDiv.className = 'mt-2 text-xs text-gray-500';
+    
+    const date = new Date(workStatus.timestamp);
+    const formattedDate = date.toLocaleString('id-ID');
+    
+    infoDiv.innerHTML = `
+        <div class="flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Pekerjaan dilanjutkan pada ${formattedDate}</span>
+        </div>
+    `;
+    
+    btn.parentNode.appendChild(infoDiv);
+}
+
+// Fungsi untuk inisialisasi status tombol
+function initializeContinueWorkButtons() {
+    document.querySelectorAll('[id^="continueWorkBtn-"]').forEach(btn => {
+        const evaId = btn.id.split('-')[1];
+        const workStatus = getWorkStatus(evaId);
+        
+        if (workStatus && workStatus.status === 'continued') {
+            const btnText = document.getElementById(`btnText-${evaId}`);
+            
+            btn.disabled = true;
+            btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            btn.classList.add('bg-blue-600', 'cursor-not-allowed');
+            btnText.textContent = 'Pekerjaan Dilanjutkan';
+            
+            // Ubah icon
+            const icon = btn.querySelector('svg');
+            icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />`;
+            
+            // Tambahkan info waktu
+            addWorkContinuedInfo(evaId);
+        }
+    });
+}
+
+// Enhanced notification function
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 max-w-sm p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full ${
+        type === 'success' ? 'bg-green-100 border border-green-400 text-green-700' : 
+        type === 'error' ? 'bg-red-100 border border-red-400 text-red-700' : 
+        'bg-blue-100 border border-blue-400 text-blue-700'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <div class="flex-1 text-sm font-medium">
+                ${message}
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-lg leading-none hover:opacity-75 font-bold">&times;</button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    }, 5000);
+}
+
+// Close modal when clicking outside
+document.getElementById('rejectModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeRejectModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeRejectModal();
+    }
+});
+
+// Initialize everything when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeContinueWorkButtons();
+    
+    @if(session('success'))
+        const forms = document.querySelectorAll('[id^="notes-form-"]');
+        forms.forEach(form => {
+            const evaId = form.id.split('-')[2];
             const displayDiv = document.getElementById(`notes-display-${evaId}`);
-            const formDiv = document.getElementById(`notes-form-${evaId}`);
             const editBtn = document.getElementById(`edit-btn-${evaId}`);
             
-            displayDiv.classList.add('hidden');
-            formDiv.classList.remove('hidden');
-            document.getElementById(`notes-input-${evaId}`).focus();
-            editBtn.classList.add('hidden');
-        }
-
-        function cancelEdit(evaId) {
-            const displayDiv = document.getElementById(`notes-display-${evaId}`);
-            const formDiv = document.getElementById(`notes-form-${evaId}`);
-            const editBtn = document.getElementById(`edit-btn-${evaId}`);
-            const textarea = document.getElementById(`notes-input-${evaId}`);
-            
-            const originalNotes = displayDiv.querySelector('p').textContent;
-            textarea.value = originalNotes === 'Belum ada catatan.' ? '' : originalNotes;
-            
-            displayDiv.classList.remove('hidden');
-            formDiv.classList.add('hidden');
-            editBtn.classList.remove('hidden');
-        }
-
-        // New functions for status management
-        function updateStatus(evaId, status) {
-            if (confirm(`Apakah Anda yakin ingin mengubah status EVA ini menjadi ${getStatusText(status)}?`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = `/eva/${evaId}/status`;
-                
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                form.innerHTML = `
-                    <input type="hidden" name="_token" value="${csrfToken}">
-                    <input type="hidden" name="status" value="${status}">
-                `;
-                
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
-
-        function showRejectModal(evaId) {
-            const modal = document.getElementById('rejectModal');
-            const form = document.getElementById('rejectForm');
-            
-            form.action = `/eva/${evaId}/status`;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            
-            // Focus on reason textarea
-            document.getElementById('reason').focus();
-        }
-
-        function closeRejectModal() {
-            const modal = document.getElementById('rejectModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            
-            // Clear the form
-            document.getElementById('reason').value = '';
-        }
-
-        function getStatusText(status) {
-            switch(status) {
-                case 'approved': return 'disetujui';
-                case 'rejected': return 'ditolak';
-                case 'pending': return 'menunggu persetujuan';
-                default: return 'tidak diketahui';
-            }
-        }
-
-        // Close modal when clicking outside
-        document.getElementById('rejectModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeRejectModal();
+            if (displayDiv && editBtn) {
+                form.classList.add('hidden');
+                displayDiv.classList.remove('hidden');
+                editBtn.classList.remove('hidden');
             }
         });
+    @endif
+});
 
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeRejectModal();
-            }
-        });
-
-        @if(session('success'))
-            document.addEventListener('DOMContentLoaded', function() {
-                const forms = document.querySelectorAll('[id^="notes-form-"]');
-                forms.forEach(form => {
-                    const evaId = form.id.split('-')[2];
-                    const displayDiv = document.getElementById(`notes-display-${evaId}`);
-                    const editBtn = document.getElementById(`edit-btn-${evaId}`);
-                    
-                    if (displayDiv && editBtn) {
-                        form.classList.add('hidden');
-                        displayDiv.classList.remove('hidden');
-                        editBtn.classList.remove('hidden');
-                    }
-                });
-            });
-        @endif
-    </script>
+// Prevent clicking disabled buttons
+document.addEventListener('click', function(e) {
+    if (e.target.disabled && e.target.id && e.target.id.startsWith('continueWorkBtn-')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    }
+});
+</script>
 
     <!-- Add CSRF token meta tag if not already present -->
     @push('head')
