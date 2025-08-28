@@ -40,6 +40,13 @@
                         @csrf
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
+                                <label class="block text-sm font-medium mb-1">Jenis Update</label>
+                                <select name="type" class="w-full px-3 py-2 border rounded-lg" required>
+                                    <option value="weekly">Mingguan</option>
+                                   
+                                </select>
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium mb-1">Tanggal Update</label>
                                 <input type="date" name="progress_date" class="w-full px-3 py-2 border rounded-lg"
                                        value="{{ date('Y-m-d') }}" required
@@ -51,14 +58,7 @@
                                            max="{{ $project->end_project }}"
                                        @endif>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Jenis Update</label>
-                                <select name="type" class="w-full px-3 py-2 border rounded-lg" required>
-                                    <option value="weekly">Mingguan</option>
-                                    <option value="milestone">Milestone</option>
-                                    <option value="wbs">wbs</option>
-                                </select>
-                            </div>
+                            
                             <div>
                                 <label class="block text-sm font-medium mb-1">Kode WBS</label>
                                 <select name="wbs_code" id="wbs_code" class="w-full px-3 py-2 border rounded-lg" required>

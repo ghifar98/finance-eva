@@ -24,27 +24,7 @@
                         <form action="{{ route('incomestatement.index') }}" method="GET" class="space-y-4">
                             <!-- First Row: Date Inputs and Project Selection -->
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div class="col-span-1">
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
-                                    <input 
-                                        type="date" 
-                                        name="start_date" 
-                                        value="{{ request('start_date') }}"
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                                
-                                <div class="col-span-1">
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">End Date</label>
-                                    <input 
-                                        type="date" 
-                                        name="end_date" 
-                                        value="{{ request('end_date') }}"
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                                
-                                <div class="col-span-1">
+                                 <div class="col-span-1">
                                     <label class="block text-sm font-medium text-slate-700 mb-2">Project</label>
                                     <select 
                                         name="project_id" 
@@ -65,6 +45,27 @@
                                         @endforeach
                                     </select>
                                 </div>
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
+                                    <input 
+                                        type="date" 
+                                        name="start_date" 
+                                        value="{{ request('start_date') }}"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">End Date</label>
+                                    <input 
+                                        type="date" 
+                                        name="end_date" 
+                                        value="{{ request('end_date') }}"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                
+                               
                                 
                                 <div class="col-span-1 flex items-end gap-2">
                                     <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
