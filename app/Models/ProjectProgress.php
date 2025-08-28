@@ -9,24 +9,24 @@ class ProjectProgress extends Model
 {
     use HasFactory;
 
-     protected $casts = [
-        'progress_date' => 'date', // Tambahkan ini
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime'
-    ];
-
     protected $fillable = [
         'project_id',
-        'progress_date',
+        'progress_date', 
         'type',
         'progress_value',
         'description',
+        'wbs_code',  // Tambahkan ini
         'user_id'
     ];
-    
+
+    protected $casts = [
+        'progress_date' => 'date'
+    ];
+
+    // Relationships
     public function project()
     {
-        return $this->belongsTo(MasterProject::class);
+        return $this->belongsTo(MasterProject::class, 'project_id');
     }
 
     public function user()

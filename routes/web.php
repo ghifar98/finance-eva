@@ -36,17 +36,23 @@ Route::middleware(['auth'])->group(function () {
     Route::get('settings/password', Password::class)->name('settings.password');
     Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
 
-    // Master Project
-    Route::prefix('master-project')->name('master-projects.')->group(function () {
-        Route::get('/', [MasterProjectController::class, 'index'])->name('index');
-        Route::get('/create', [MasterProjectController::class, 'create'])->name('create');
-        Route::post('/store', [MasterProjectController::class, 'store'])->name('store');
-        Route::get('/{id}/show', [MasterProjectController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [MasterProjectController::class, 'edit'])->name('edit');
-        Route::put('/{id}/update', [MasterProjectController::class, 'update'])->name('update');
-    });
-    Route::post('project-progress/{project}', [MasterProjectController::class, 'storeProgress'])->name('project-progress.store');
-
+   // Master Project
+Route::prefix('master-project')->name('master-projects.')->group(function () {
+    Route::get('/', [MasterProjectController::class, 'index'])->name('index');
+    Route::get('/create', [MasterProjectController::class, 'create'])->name('create');
+    Route::post('/store', [MasterProjectController::class, 'store'])->name('store');
+    Route::get('/{id}/show', [MasterProjectController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [MasterProjectController::class, 'edit'])->name('edit');
+    Route::put('/{id}/update', [MasterProjectController::class, 'update'])->name('update');
+    // Tambahkan route ini di dalam group route yang sudah ada
+Route::post('/projects/{project}/progress/wbs', [MasterProjectController::class, 'storeProgressFromWbs'])
+    ->name('project-progress.store-from-wbs');
+    
+    // Tambahan route untuk WBS progress
+    Route::post('/{project}/progress/wbs', [MasterProjectController::class, 'storeProgressFromWbs'])
+        ->name('progress.wbs.store');
+});
+Route::post('project-progress/{project}', [MasterProjectController::class, 'storeProgress'])->name('project-progress.store');
     // Account & Sub-Account
     Route::prefix('account')->name('account.')->group(function () {
         Route::get('/', [AccountController::class, 'index'])->name('index');

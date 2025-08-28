@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\MasterProject;
 use App\Models\ProjectProgress;
 use Carbon\Carbon;
+use App\Models\Wbs;
 use Carbon\CarbonPeriod;
 
 class MasterProjectController extends Controller
@@ -133,10 +134,20 @@ public function show($id)
             $weekNumber++;
         }
     }
-// dd((new MasterProject())->getWeeklyProgress($id));
 
-    return view('master-project.show', compact('project', 'weekly_groups', 'active_week_group'));
+    // Get available WBS codes that haven't been used yet
+    $completedWbsCodes = ProjectProgress::where('project_id', $id)
+        ->whereNotNull('wbs_code')
+        ->pluck('wbs_code')
+        ->toArray();
 
+    $availableWbsCodes = Wbs::where('project_id', $id)
+        ->whereNotIn('kode', $completedWbsCodes)
+        ->orderBy('minggu')
+        ->orderBy('kode')
+        ->get();
+
+    return view('master-project.show', compact('project', 'weekly_groups', 'active_week_group', 'availableWbsCodes'));
 }
     public function edit($id){
         $project = MasterProject::findOrFail($id);
@@ -191,7 +202,8 @@ public function update(Request $request, $id)
 {
     $request->validate([
         'progress_date' => 'required|date',
-        'type' => 'required|in:daily,weekly,milestone',
+        'type' => 'required|in:daily,weekly,milestone,wbs',
+
        'progress_value' => [
     'required',
     function ($attribute, $value, $fail) {
@@ -294,4 +306,96 @@ public function streamDocument($id)
         'Cache-Control' => 'public, max-age=3600',
     ]);
 }
+  public function getWbsProgressSummary($projectId)
+{
+    $project = MasterProject::findOrFail($projectId);
+    
+    // Get all WBS items for this project
+    $allWbsItems = Wbs::where('project_id', $projectId)
+        ->select('id', 'kode', 'minggu', 'rencana_progres', 'deskripsi')
+        ->orderBy('minggu')
+        ->orderBy('kode')
+        ->get();
+    
+    // Get completed WBS items berdasarkan wbs_code di project_progress
+    $completedWbsCodes = ProjectProgress::where('project_id', $projectId)
+        ->whereNotNull('wbs_code')
+        ->pluck('wbs_code')
+        ->toArray();
+    
+    // Calculate summary
+    $totalWbsItems = $allWbsItems->count();
+    $completedCount = count($completedWbsCodes);
+    $remainingCount = $totalWbsItems - $completedCount;
+    
+    $totalPlannedProgress = $allWbsItems->sum('rencana_progres');
+    $completedProgress = $allWbsItems->whereIn('kode', $completedWbsCodes)->sum('rencana_progres');
+    $remainingProgress = $totalPlannedProgress - $completedProgress;
+    
+    return [
+        'total_wbs_items' => $totalWbsItems,
+        'completed_items' => $completedCount,
+        'remaining_items' => $remainingCount,
+        'total_planned_progress' => $totalPlannedProgress,
+        'completed_progress' => $completedProgress,
+        'remaining_progress' => $remainingProgress,
+        'completion_percentage' => $totalWbsItems > 0 ? round(($completedCount / $totalWbsItems) * 100, 2) : 0,
+        'all_wbs_items' => $allWbsItems,
+        'completed_wbs_codes' => $completedWbsCodes,
+    ];
+}
+
+    /**
+     * Show WBS progress dashboard
+     */
+    public function showWbsProgress($id)
+    {
+        $project = MasterProject::findOrFail($id);
+        $wbsSummary = $this->getWbsProgressSummary($id);
+        
+        return view('master-project.wbs-progress', compact('project', 'wbsSummary'));
+    }
+
+public function storeProgressFromWbs(Request $request, $projectId)
+{
+    $request->validate([
+        'wbs_code' => 'required|string|exists:wbs,kode',
+        'progress_date' => 'required|date',
+        'description' => 'nullable|string|max:500',
+    ]);
+
+    $project = MasterProject::findOrFail($projectId);
+
+    $wbs = Wbs::where('project_id', $projectId)
+        ->where('kode', $request->wbs_code)
+        ->firstOrFail();
+
+    // Cek apakah progress untuk WBS ini sudah ada
+    $alreadyLogged = ProjectProgress::where('project_id', $projectId)
+        ->where('wbs_code', $wbs->kode)
+        ->exists();
+
+    if ($alreadyLogged) {
+        return redirect()->back()
+            ->withErrors(['wbs_code' => 'Progress untuk WBS ini sudah dicatat sebelumnya.']);
+    }
+
+    $progress = new ProjectProgress();
+    $progress->project_id = $project->id;
+    $progress->wbs_code = $wbs->kode;
+    $progress->progress_date = $request->progress_date;
+    $progress->type = 'wbs';
+    $progress->progress_value = $wbs->rencana_progres;
+    $progress->description = $request->description ?? $wbs->deskripsi;
+    $progress->user_id = Auth::id();
+    $progress->save();
+
+    // Update progress project
+    $totalProgress = ProjectProgress::where('project_id', $project->id)->sum('progress_value');
+    $project->progress = min($totalProgress, 100);
+    $project->save();
+
+    return redirect()->back()->with('success', 'Progress WBS berhasil disimpan!');
+}
+
 }
