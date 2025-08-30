@@ -82,6 +82,7 @@ class IncomeStatementController extends Controller
 
         ksort($grouped);
 
+        // Perbaikan: Ambil hanya akun induk untuk summary
         $accounts = Account::query()
             ->with(['incomestatements' => function ($query) use ($startDate, $endDate, $projectIdSelected) {
                 $query->when($startDate && $endDate, function ($q) use ($startDate, $endDate, $projectIdSelected) {
@@ -98,36 +99,19 @@ class IncomeStatementController extends Controller
             ->get();
 
         $summary = $accounts->map(function ($account) use ($startDate, $endDate, $projectIdSelected) {
-            $total = $account->incomestatements
-                ->filter(function ($entry) use ($startDate, $endDate, $projectIdSelected) {
-                    $valid = true;
-
-                    if ($startDate && $endDate) {
-                        $entryDate = optional($entry->purchase)->date;
-                        if (!$entryDate || $entryDate < $startDate || $entryDate > $endDate) {
-                            $valid = false;
-                        }
-                    }
-
-                    if ($projectIdSelected) {
-                        if (optional($entry->purchase)->project_id != $projectIdSelected) {
-                            $valid = false;
-                        }
-                    }
-
-                    return $valid;
-                })
-                ->sum('nominal');
-
             $code = $account->code;
-
+            
+            // Untuk akun induk (ends with 0000), hitung total dari semua akun anak
+            // TANPA menghitung akun induk itu sendiri
             if (strlen($code) === 5 && substr($code, -4) === '0000') {
                 $prefix = substr($code, 0, 1);
                 $childAccounts = Account::where('code', 'like', $prefix . '%')
-                    ->where('code', '!=', $code)
+                    ->where('code', '!=', $code) // Exclude parent account
+                    ->where('code', 'not like', $prefix . '_000') // Exclude other parent-level accounts
                     ->with(['incomestatements.purchase'])
                     ->get();
 
+                $total = 0;
                 foreach ($childAccounts as $child) {
                     $childTotal = $child->incomestatements
                         ->filter(function ($entry) use ($startDate, $endDate, $projectIdSelected) {
@@ -152,37 +136,28 @@ class IncomeStatementController extends Controller
 
                     $total += $childTotal;
                 }
-            } elseif (strlen($code) === 5 && substr($code, -3) === '000') {
-                $prefix = substr($code, 0, 2);
-                $childAccounts = Account::where('code', 'like', $prefix . '%')
-                    ->where('code', '!=', $code)
-                    ->with(['incomestatements.purchase'])
-                    ->get();
+            } else {
+                // Untuk akun non-induk, hitung langsung dari transaksi akun tersebut
+                $total = $account->incomestatements
+                    ->filter(function ($entry) use ($startDate, $endDate, $projectIdSelected) {
+                        $valid = true;
 
-                foreach ($childAccounts as $child) {
-                    $childTotal = $child->incomestatements
-                        ->filter(function ($entry) use ($startDate, $endDate, $projectIdSelected) {
-                            $valid = true;
-
-                            if ($startDate && $endDate) {
-                                $entryDate = optional($entry->purchase)->date;
-                                if (!$entryDate || $entryDate < $startDate || $entryDate > $endDate) {
-                                    $valid = false;
-                                }
+                        if ($startDate && $endDate) {
+                            $entryDate = optional($entry->purchase)->date;
+                            if (!$entryDate || $entryDate < $startDate || $entryDate > $endDate) {
+                                $valid = false;
                             }
+                        }
 
-                            if ($projectIdSelected) {
-                                if (optional($entry->purchase)->project_id != $projectIdSelected) {
-                                    $valid = false;
-                                }
+                        if ($projectIdSelected) {
+                            if (optional($entry->purchase)->project_id != $projectIdSelected) {
+                                $valid = false;
                             }
+                        }
 
-                            return $valid;
-                        })
-                        ->sum('nominal');
-
-                    $total += $childTotal;
-                }
+                        return $valid;
+                    })
+                    ->sum('nominal');
             }
 
             return [

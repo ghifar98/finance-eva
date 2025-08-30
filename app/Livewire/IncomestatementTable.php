@@ -54,7 +54,8 @@ final class IncomestatementTable extends PowerGridComponent
                           ->orWhere('code', 'like', '7%')
                           ->orWhere('code', 'like', '8%');
                     });
-            });
+            })
+            ->orderBy('code'); // Tambah ordering untuk urutan yang konsisten
     }
 
     public function fields(): PowerGridFields
@@ -73,48 +74,89 @@ final class IncomestatementTable extends PowerGridComponent
 
     protected function calculateAccountTotal($model): float
     {
-        $total = $model->incomestatements
-            ->filter(function ($entry) {
-                $valid = true;
+        $code = $model->code;
+        
+        // Untuk akun induk level 1 (ends with 0000), hitung total dari anak langsung (level 2)
+        if (strlen($code) === 5 && substr($code, -4) === '0000') {
+            $prefix = substr($code, 0, 1);
+            
+            // Ambil hanya anak langsung (level 2: X1000, X2000, X3000, dst)
+            $directChildren = Account::where('code', 'like', $prefix.'_000')
+                ->where('code', '!=', $code)
+                ->with(['incomestatements.purchase'])
+                ->get();
 
-                if ($this->startDate && $this->endDate) {
-                    $entryDate = optional($entry->purchase)->date;
-                    if (!$entryDate || $entryDate < $this->startDate || $entryDate > $this->endDate) {
-                        $valid = false;
-                    }
-                }
-
-                if ($this->projectId) {
-                    if (optional($entry->purchase)->project_id != $this->projectId) {
-                        $valid = false;
-                    }
-                }
-
-                return $valid;
-            })
-            ->sum('nominal');
-
-        // Calculate child accounts if this is a parent account
-        if (strlen($model->code) == 5) {
-            $prefix = match(true) {
-                substr($model->code, -4) === '0000' => substr($model->code, 0, 1),
-                substr($model->code, -3) === '000' => substr($model->code, 0, 2),
-                default => null
-            };
-
-            if ($prefix) {
-                $childAccounts = Account::where('code', 'like', $prefix.'%')
-                    ->where('code', '!=', $model->code)
-                    ->with(['incomestatements.purchase'])
-                    ->get();
-
-                foreach ($childAccounts as $child) {
-                    $total += $this->calculateAccountTotal($child);
-                }
+            $total = 0;
+            foreach ($directChildren as $child) {
+                // Untuk setiap anak langsung, hitung totalnya (termasuk cucu-cucunya)
+                $total += $this->calculateAccountTotal($child);
             }
-        }
 
-        return $total;
+            return $total;
+        }
+        
+        // Untuk akun level 2 (ends with 000), hitung dari semua anak-anaknya
+        elseif (strlen($code) === 5 && substr($code, -3) === '000') {
+            $prefix = substr($code, 0, 2);
+            $childAccounts = Account::where('code', 'like', $prefix.'%')
+                ->where('code', '!=', $code)
+                ->with(['incomestatements.purchase'])
+                ->get();
+
+            $total = 0;
+            foreach ($childAccounts as $child) {
+                $childTotal = $child->incomestatements
+                    ->filter(function ($entry) {
+                        $valid = true;
+
+                        if ($this->startDate && $this->endDate) {
+                            $entryDate = optional($entry->purchase)->date;
+                            if (!$entryDate || $entryDate < $this->startDate || $entryDate > $this->endDate) {
+                                $valid = false;
+                            }
+                        }
+
+                        if ($this->projectId) {
+                            if (optional($entry->purchase)->project_id != $this->projectId) {
+                                $valid = false;
+                            }
+                        }
+
+                        return $valid;
+                    })
+                    ->sum('nominal');
+
+                $total += $childTotal;
+            }
+
+            return $total;
+        }
+        
+        // Untuk akun detail (bukan induk), hitung langsung dari transaksi
+        else {
+            $total = $model->incomestatements
+                ->filter(function ($entry) {
+                    $valid = true;
+
+                    if ($this->startDate && $this->endDate) {
+                        $entryDate = optional($entry->purchase)->date;
+                        if (!$entryDate || $entryDate < $this->startDate || $entryDate > $this->endDate) {
+                            $valid = false;
+                        }
+                    }
+
+                    if ($this->projectId) {
+                        if (optional($entry->purchase)->project_id != $this->projectId) {
+                            $valid = false;
+                        }
+                    }
+
+                    return $valid;
+                })
+                ->sum('nominal');
+
+            return $total;
+        }
     }
 
     public function columns(): array
